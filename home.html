@@ -1,0 +1,2433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="description" content="3D 旋转图册：独享本与家族树，一个站点两个入口。">
+<title>3D 旋转图册</title>
+
+<style>
+/* ============ 设计变量 ============ */
+:root{
+  --bg:#0f1117;
+  --bg-2:#1b2030;
+  --card:rgba(255,255,255,.05);
+  --card-hi:rgba(255,255,255,.09);
+  --line:rgba(255,255,255,.10);
+  --text:#e8eaf0;
+  --muted:#98a1b2;
+  --accent:#ffb86b;
+  --accent-2:#7cc4ff;
+  --danger:#ff6b6b;
+  --radius:16px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{background:var(--bg)}
+body{
+  margin:0;
+  min-height:100vh;
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  color:var(--text);
+  background:radial-gradient(120% 80% at 50% 0%,var(--bg-2) 0%,var(--bg) 62%);
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+  touch-action:manipulation;
+}
+button{font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+/* ============ 骨架 ============ */
+.app{
+  max-width:720px;
+  margin:0 auto;
+  padding:24px 16px calc(96px + var(--safe-b));
+  min-height:100vh;
+}
+.brand{padding:28px 4px 18px;text-align:center}
+.brand__title{margin:0;font-size:26px;letter-spacing:2px;font-weight:600}
+.brand__sub{margin:6px 0 0;font-size:13px;color:var(--muted)}
+
+/* 首页两张卡片 */
+.cards{display:grid;gap:14px;grid-template-columns:1fr;margin-top:8px}
+@media (min-width:600px){.cards{grid-template-columns:1fr 1fr}}
+.card{
+  display:flex;gap:14px;align-items:center;
+  min-height:104px;padding:18px;
+  text-align:left;cursor:pointer;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  transition:background .18s ease,transform .18s ease,border-color .18s ease;
+}
+.card:hover,.card:focus-visible{background:var(--card-hi);border-color:rgba(255,184,107,.45);transform:translateY(-2px)}
+.card__badge{
+  flex:0 0 56px;height:56px;border-radius:14px;
+  display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(255,184,107,.22),rgba(255,184,107,.06));
+  border:1px solid rgba(255,184,107,.28);
+}
+.card__badge--tree{background:linear-gradient(145deg,rgba(124,196,255,.22),rgba(124,196,255,.06));border-color:rgba(124,196,255,.28)}
+.card__title{display:block;margin:0;font-size:17px;font-weight:600}
+.card__desc{display:block;margin:4px 0 0;font-size:13px;color:var(--muted)}
+
+/* ============ 顶部栏（登录态）============ */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.topbar__left{font-weight:600;font-size:15px}
+.topbar__user{display:flex;align-items:center;gap:10px}
+.userchip{font-size:13px;color:var(--muted);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn--ghost{background:transparent;border:1px solid var(--line)}
+
+/* ============ 表单（登录 / 注册 / 找回）============ */
+.form{max-width:380px;margin:14px auto 0;display:grid;gap:12px}
+.input{height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:inherit}
+.input:focus{outline:none;border-color:var(--accent)}
+.tabs{display:flex;gap:8px;justify-content:center;margin:6px 0 4px}
+.tab{padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;min-height:44px}
+.tab--on{background:var(--card-hi);border-color:rgba(255,184,107,.45);font-weight:600}
+.linklike{background:none;border:none;color:var(--accent-2);cursor:pointer;text-decoration:underline;font:inherit;padding:6px 4px;min-height:44px}
+
+/* ============ 顶部头像圆 ============ */
+.topbar__av{width:32px;height:32px;border-radius:50%;overflow:hidden;background:var(--card-hi);display:grid;place-items:center;font-weight:600;flex:none}
+.topbar__av img{width:100%;height:100%;object-fit:cover}
+.topbar__av span{font-size:15px;color:var(--muted)}
+
+/* ============ 资料卡头像预览 ============ */
+.avatar-prev{width:96px;height:96px;border-radius:50%;overflow:hidden;margin:4px auto 14px;background:var(--card-hi);display:grid;place-items:center}
+.avatar-prev img{width:100%;height:100%;object-fit:cover}
+.avatar-prev__init{font-size:38px;font-weight:600;color:var(--muted)}
+
+/* ============ 通用按钮 ============ */
+.btn{
+  min-height:44px;padding:0 18px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:12px;border:1px solid var(--line);
+  background:var(--card);cursor:pointer;
+  transition:background .15s ease,opacity .15s ease;
+}
+.btn:hover{background:var(--card-hi)}
+.btn--primary{background:linear-gradient(145deg,#ffc98a,var(--accent));color:#231703;border-color:transparent;font-weight:600}
+.btn--danger{background:var(--danger);color:#fff;border-color:transparent;font-weight:600}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* ============ 3D 家族树 ============ */
+.tree{position:relative;width:100%;height:min(72vh,620px);perspective:1100px;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;background:radial-gradient(120% 80% at 50% 30%,#1d2436 0%,#0f1117 70%)}
+.tree__scene{position:absolute;left:50%;top:42%;transform-style:preserve-3d;will-change:transform}
+.tree__fruit{position:absolute;left:0;top:0;width:84px;height:84px;margin:0;transform-style:preserve-3d;cursor:pointer}
+.tree__avatar{
+  width:84px;height:84px;border-radius:50%;overflow:hidden;
+  display:grid;place-items:center;font-size:30px;font-weight:600;color:#fff;
+  background:linear-gradient(145deg,#ffc98a,#ff9f6b);
+  border:2px solid rgba(255,255,255,.35);
+  box-shadow:0 8px 20px rgba(0,0,0,.45);
+}
+.tree__fruit--empty .tree__avatar{
+  background:rgba(255,255,255,.06);
+  border:2px dashed rgba(255,255,255,.4);
+  color:rgba(255,255,255,.5);font-size:26px;
+}
+.tree__avatar img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.tree__label{
+  position:absolute;top:88px;left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:12px;color:#e8eaf0;text-shadow:0 1px 3px rgba(0,0,0,.7);
+}
+.tree__glow{
+  position:absolute;inset:-6px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,200,138,.35),transparent 70%);
+  z-index:-1;
+}
+
+/* ============ 列表 / 通用卡片 ============ */
+.list{display:grid;gap:12px;margin-top:8px}
+.list__item{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--card);min-height:60px;
+}
+.list__item--btn{cursor:pointer}
+.list__item--btn:hover{background:var(--card-hi)}
+.field{display:grid;gap:6px;margin-bottom:12px}
+.field label{font-size:13px;color:var(--muted)}
+
+/* ============ 悬浮上传按钮 ============ */
+.fab{
+  position:fixed;right:18px;bottom:calc(56px + var(--safe-b));z-index:40;
+  width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+  display:grid;place-items:center;font-size:26px;line-height:1;
+  background:linear-gradient(145deg,#ffc98a,var(--accent));color:#231703;
+  box-shadow:0 8px 22px rgba(0,0,0,.4);
+}
+.fab:active{transform:scale(.94)}
+
+/* ============ 全屏看图 ============ */
+.viewer{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.94);display:flex;flex-direction:column}
+.viewer__img{flex:1;display:grid;place-items:center;padding:16px;min-height:0}
+.viewer__img img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
+.viewer__bar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px calc(12px + var(--safe-b));color:#fff}
+.viewer__cap{font-size:14px;color:#e8eaf0;flex:1}
+
+/* ============ 3D 立方体 ============ */
+.cube{position:relative;width:100%;height:min(64vh,520px);perspective:1200px;touch-action:none;user-select:none;-webkit-user-select:none}
+.cube__stage{position:absolute;inset:0;transform-style:preserve-3d}
+.cube__face{
+  position:absolute;left:50%;top:50%;width:78%;height:78%;
+  margin-left:-39%;margin-top:-39%;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:14px;overflow:hidden;background:#232733;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);
+  will-change:transform;
+}
+.cube__face img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.cube__cap{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:10px 12px;font-size:13px;color:#fff;
+  background:linear-gradient(0deg,rgba(0,0,0,.6),transparent);
+}
+.cube__cap b{font-weight:600}
+.cube__counter{
+  position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);
+  font-size:13px;color:var(--muted);
+}
+
+/* ============ 空状态 / 错误 ============ */
+.empty{padding:48px 16px;text-align:center}
+.empty__icon{margin:0 auto 14px;width:64px;height:64px;display:grid;place-items:center;color:var(--accent)}
+.empty__title{margin:0 0 8px;font-size:18px;font-weight:600}
+.empty__desc{margin:0 auto 20px;max-width:22em;font-size:14px;color:var(--muted)}
+.empty--error .empty__title{color:var(--danger)}
+
+/* ============ 版本号 ============ */
+.ver{
+  position:fixed;left:0;right:0;bottom:0;
+  padding:10px 0 calc(10px + var(--safe-b));
+  text-align:center;font-size:12px;color:var(--muted);
+  background:linear-gradient(180deg,transparent,rgba(15,17,23,.85));
+  pointer-events:none;
+}
+
+/* ============ toast ============ */
+.toast{
+  position:fixed;left:50%;bottom:calc(56px + var(--safe-b));transform:translateX(-50%);
+  max-width:min(88vw,420px);
+  padding:10px 16px;border-radius:12px;
+  background:rgba(28,32,44,.96);border:1px solid var(--line);
+  font-size:14px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.toast--error{border-color:rgba(255,107,107,.6);color:#ffd9d9}
+.toast--ok{border-color:rgba(124,196,255,.5)}
+
+/* ============ 全局错误红条 ============ */
+.errbar{
+  position:fixed;left:0;right:0;bottom:calc(34px + var(--safe-b));
+  padding:10px 14px;z-index:70;cursor:pointer;
+  background:rgba(120,26,32,.95);color:#ffe3e3;font-size:13px;
+  border-top:1px solid rgba(255,107,107,.6);
+  word-break:break-all;
+}
+
+/* ============ 弹窗 ============ */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center}
+.modal__mask{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.modal__box{
+  position:relative;width:min(90vw,380px);
+  padding:22px;border-radius:var(--radius);
+  background:#171b26;border:1px solid var(--line);
+  box-shadow:0 18px 48px rgba(0,0,0,.5);
+}
+.modal__title{margin:0 0 10px;font-size:17px;font-weight:600}
+.modal__msg{margin:0 0 20px;font-size:14px;color:var(--muted);white-space:pre-wrap}
+.modal__actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* ============ 兜底：加载失败 ============ */
+.bootfail{
+  position:fixed;inset:0;z-index:100;display:grid;place-items:center;
+  padding:24px;background:var(--bg);
+}
+.bootfail__card{
+  max-width:420px;text-align:center;
+  padding:28px;border-radius:var(--radius);
+  background:#171b26;border:1px solid var(--line);
+}
+.bootfail__title{margin:0 0 10px;font-size:18px}
+.bootfail__desc{margin:0 0 20px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<main id="app" class="app"></main>
+<footer id="ver" class="ver"></footer>
+<div id="toast" class="toast" hidden></div>
+<div id="errbar" class="errbar" hidden role="alert"></div>
+<div id="modal" class="modal" hidden></div>
+<div id="bootfail" class="bootfail" hidden></div>
+
+<!--
+  兜底脚本（7.7 第 2 条）：3 秒后仍未见到启动标志，就显示「加载失败，请刷新重试」。
+  · 只 import config.js（零依赖纯常量），因此 js/ 下别的模块 404 / 语法错误时它照样能跑；
+  · 自身不依赖 ui.js，保证「ui.js 坏了也要能看到提示」。
+-->
+<!-- vendor：UMD，先于 ES Module 加载，注入全局 supabase.createClient / JSZip -->
+<script src="./vendor/supabase-js.min.js?v=20260924b"></script>
+<script src="./vendor/jszip.min.js?v=20260924b"></script>
+<script>
+  setTimeout(function () {
+    if (window.__ALBUM3D_BOOTED__) return;
+    var box = document.getElementById('bootfail');
+    box.textContent = '';
+    var card = document.createElement('div');
+    card.className = 'bootfail__card';
+    var h = document.createElement('h2');
+    h.className = 'bootfail__title';
+    h.textContent = '鍔犺浇澶辫触锛岃鍒锋柊閲嶈瘯';
+    var p = document.createElement('p');
+    p.className = 'bootfail__desc';
+    p.textContent = '椤甸潰鑴氭湰鏈兘鍚姩銆傝妫€鏌ョ綉缁滃悗鍒锋柊锛涜嫢鍙嶅鍑虹幇锛岃娓呬竴涓嬫祻瑙堝櫒缂撳瓨銆?;
+    var b = document.createElement('button');
+    b.className = 'btn btn--primary';
+    b.type = 'button';
+    b.textContent = '鍒锋柊';
+    b.addEventListener('click', function () { location.reload(); });
+    card.appendChild(h); card.appendChild(p); card.appendChild(b);
+    box.appendChild(card);
+    box.hidden = false;
+  }, 12000);
+</script>
+
+<script>
+"use strict";
+
+// ==================== config.js ====================
+/**
+ * js/config.js —— 全站常量的唯一来源
+ *
+ * 【铁律】
+ * 1. 开工令 4.4「内置常量表」里的每一项都必须落在本文件，禁止在别处散落魔法数字。
+ * 2. 禁止占位值：所有数值均取自开工令 4.4 或其正文，出处写在每行注释里。
+ * 3. 本文件为纯常量模块，不 import 任何东西、不碰 DOM，保证 index.html 的
+ *    兜底脚本可以在任何情况下把它单独 import 进来（见 js/app.js 的启动标志）。
+ */
+
+// ===== 版本 =====
+/** 版本号：必须与开工令文件名版本号、页面底部显示的版本号三者一致（验收 J1） */
+const VER = 'v0.1.0';
+
+// ===== 4.4 内置常量表（主公 2026-09-23 拍板 U4：全部采用 77 的建议值）=====
+/** 压缩后「原图」长边像素上限 */
+const MAX_EDGE_FULL = 1600;
+/** 压缩后「缩略图」长边像素上限 */
+const MAX_EDGE_THUMB = 320;
+/** 压缩质量（0–1） */
+const JPEG_QUALITY = 0.82;
+/** 名称 / 描述单字段最大字数 */
+const MAX_TEXT_LEN = 60;
+/** 称谓最大字数 */
+const MAX_RELATION_LEN = 10;
+/** 单个果实照片数超过此值则提示（仅提示，不阻断） */
+const WARN_PHOTO_COUNT = 200;
+/** 距上次导出备份多少天开始提醒 */
+const BACKUP_REMIND_DAYS = 30;
+/** 立方体每面旋转角度（度），固定几何值 */
+const ROTATE_STEP = 90;
+/** 当前张前后各保留几张真实面，固定实现参数 */
+const RENDER_WINDOW = 2;
+/** 惯性每帧衰减系数，固定手感参数 */
+const INERTIA_DECAY = 0.95;
+/** 触发吸附的角度阈值（× 90°），固定手感参数 */
+const SNAP_THRESHOLD = 0.15;
+/** 判定「滑动」而非「点击」的最小位移比（× 屏宽），固定手势参数 */
+const MIN_SWIPE_SPEED = 0.05;
+/** 树相邻辈分层之间的垂直落差（px） */
+const TREE_LAYER_GAP = 180;
+/** 同层果实圆环的最小半径（px） */
+const TREE_MIN_RADIUS = 160;
+/** 同层每多一个果实，圆环半径增加量（px） */
+const TREE_RADIUS_PER_MEMBER = 70;
+/** 分享页签名 URL 有效期（秒） */
+const SIGNED_URL_TTL = 3600;
+/** 每人独享本上限（D5） */
+const MAX_SOLO_ALBUM = 1;
+/** 每人可建的家族树上限（D15） */
+const MAX_FAMILY_ALBUM = 3;
+
+// ===== 开工令正文派生常量（出处见注释）=====
+/** Storage 私有桶名（4.3 路径约定 / 13.1 第 3 步：不勾选 Public） */
+const STORAGE_BUCKET = 'photos';
+/** localStorage 键前缀，防与其他项目串门（信息卡） */
+const LS_PREFIX = 'album3d.';
+/** Supabase Auth 最低密码长度（4.2 / 13.1 第 4 步「最低密码长度 8 位」） */
+const MIN_PASSWORD_LEN = 8;
+/** 排序步长，插入两张之间取中间值（R7） */
+const ORDER_STEP = 10;
+/** 整树缩放范围（7.5：范围限制在 0.5 ~ 2） */
+const TREE_ZOOM_MIN = 0.5;
+const TREE_ZOOM_MAX = 2;
+/** 果实数 > 此值时关闭高光滤镜、只渲染缩略图（7.5 性能降级 / P11） */
+const TREE_DEGRADE_COUNT = 20;
+/** 建树者第一个果实的默认称谓（二 · S-B1「标为建树者」） */
+const DEFAULT_FOUNDER_RELATION = '建树者';
+/** 独享本默认标题（4.1 albums.title 默认「我的相册」） */
+const DEFAULT_SOLO_TITLE = '我的相册';
+/** 家族树默认标题（二 · S-B1「默认『我们家』」） */
+const DEFAULT_FAMILY_TITLE = '我们家';
+/** 线上站点根地址，用于拼分享 / 邀请链接（信息卡） */
+const SITE_BASE_URL = 'https://sea9413.github.io/3d-album/';
+/** 分享页路由前缀（7.2 路由表） */
+const SHARE_PATH_PREFIX = '#/s/';
+/** 邀请页路由前缀（7.2 路由表） */
+const INVITE_PATH_PREFIX = '#/invite/';
+/** 启动兜底检测时限（ms）：7.7「3 秒后检测初始化标志」 */
+const BOOT_TIMEOUT_MS = 12000;
+/** toast 停留时长（ms），UI 表现参数 */
+const TOAST_DURATION_MS = 2400;
+
+// ==================== supabase.js ====================
+/**
+ * js/supabase.js —— Supabase 客户端初始化（含加载失败降级提示）
+ *
+ * 依赖：vendor/supabase-js.min.js（v2.117.1，UMD，经 <script> 先于本文件加载，
+ *       注入全局 supabase.createClient —— UMD 不能 import，勿改）。
+ *
+ * 【填 key 说明】
+ *   - SUPABASE_URL 已由 77 填实（2026-09-24，主公 A3 建的项目）。
+ *   - SUPABASE_ANON_KEY 留了空位：把 Supabase 控制台（Settings → API →
+ *     Project API keys → anon public，点复制按钮）复制的完整 key 粘贴到
+ *     下面第 22 行引号内，替换「这里粘贴…」字样，保存即可。
+ *   - anon key 属公开值（受 RLS 保护）可放前端；service_role 严禁入库。
+ *   - 填好后由 77 直接读文件核验，无需在聊天里传 key。
+ */
+
+// ===== 连接配置 =====
+/** Supabase 项目地址（主公 2026-09-24 A3 创建，区域 Singapore） */
+const SUPABASE_URL = 'https://qzwapliyuaeyclqahbnu.supabase.co';
+
+/** Supabase anon public key（⚠️ 待主公粘贴替换此占位文字） */
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6d2FwbGl5dWFleWNscWFoYm51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxOTczMDYsImV4cCI6MjEwNTc3MzMwNn0.e6FpG-QRisOu8KpxpBw6vzKHu538t4c1l6j7HFrDUog';
+
+// ===== 客户端初始化 =====
+/** 全局唯一 client 实例；null 表示初始化失败（降级提示用） */
+let sb = null;
+/** 初始化失败原因（供降级提示展示） */
+let sbError = '';
+
+try {
+  if (typeof window === 'undefined' || !window.supabase || !window.supabase.createClient) {
+    throw new Error('vendor/supabase-js.min.js 未加载（检查 <script> 顺序与文件存在）');
+  }
+  if (!SUPABASE_URL || !/^https:\/\/.+\.supabase\.co$/.test(SUPABASE_URL)) {
+    throw new Error('SUPABASE_URL 格式不对：应为 https://xxxx.supabase.co');
+  }
+  if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith('eyJ') === false) {
+    throw new Error('SUPABASE_ANON_KEY 未填或不对：应为 eyJ 开头的完整长串（控制台点复制按钮取得）');
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (e) {
+  sb = null;
+  sbError = e && e.message ? e.message : String(e);
+  // 控制台留痕，方便 77 / CodeBuddy 排查
+  console.error('[supabase.js] 初始化失败：', sbError);
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const supabaseClient = sb;
+const supabaseError = sbError;
+
+// ==================== ui.js ====================
+/**
+ * js/ui.js —— 通用 DOM / 提示 / 弹窗
+ *
+ * 【铁律 7】所有用户输入一律 textContent 渲染；本模块不提供任何 innerHTML 写入口。
+ * 若将来确有必须拼 HTML 的场景，先调用 escapeHtml() 再写。
+ */
+
+
+/** 取单个节点 */
+const $ = (sel) => document.querySelector(sel);
+
+/**
+ * 建元素。
+ * @param {string} tag
+ * @param {object} props  class / text / type / disabled / onclick ...（text 走 textContent）
+ * @param {Node|string|Array} children
+ */
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') node.className = v;
+    else if (k === 'text') node.textContent = String(v);
+    else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2).toLowerCase(), v);
+    else node.setAttribute(k, v === true ? '' : String(v));
+  }
+  for (const c of [].concat(children)) {
+    if (c === null || c === undefined || c === false) continue;
+    node.appendChild(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return node;
+}
+
+/** 清空容器 */
+function clear(node) {
+  while (node && node.firstChild) node.removeChild(node.firstChild);
+}
+
+/** HTML 转义（仅用于确需拼字符串的场景） */
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+/** 把任意错误归一成一句人话（内容一律作为文本渲染，不解析） */
+function errText(err) {
+  if (!err) return '未知错误';
+  if (typeof err === 'string') return err;
+  if (err.message) return err.message;
+  return String(err);
+}
+
+// ---------- toast ----------
+
+let toastTimer = 0;
+
+/** 底部轻提示 */
+function showToast(msg, type = 'info') {
+  const box = $('#toast');
+  if (!box) return;
+  clear(box);
+  box.className = `toast toast--${type}`;
+  box.textContent = String(msg == null ? '' : msg);
+  box.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { box.hidden = true; }, TOAST_DURATION_MS);
+}
+
+// ---------- 全局红条 ----------
+
+/** 页面底部红条（3.6 全局错误可见化），内容经转义后以文本渲染 */
+function showErrorBar(msg) {
+  const bar = $('#errbar');
+  if (!bar) return;
+  bar.textContent = `出错了：${errText(msg)}`;
+  bar.hidden = false;
+  bar.onclick = () => { bar.hidden = true; };
+}
+
+// ---------- 空状态 ----------
+
+/**
+ * 空状态引导（3.6：不留空白页，必须给下一步动作按钮）
+ * @param {Node} container
+ * @param {{icon?:Node,title:string,desc?:string,actionText?:string,onAction?:Function}} opt
+ */
+function renderEmptyState(container, opt) {
+  clear(container);
+  const kids = [];
+  if (opt.icon) kids.push(el('div', { class: 'empty__icon' }, [opt.icon]));
+  kids.push(el('h2', { class: 'empty__title', text: opt.title }));
+  if (opt.desc) kids.push(el('p', { class: 'empty__desc', text: opt.desc }));
+  if (opt.actionText && opt.onAction) {
+    kids.push(el('button', {
+      class: 'btn btn--primary', type: 'button', onclick: opt.onAction, text: opt.actionText,
+    }));
+  }
+  container.appendChild(el('div', { class: 'empty' }, kids));
+  return container;
+}
+
+// ---------- 错误页 ----------
+
+/** 容器内错误提示（转义后渲染） */
+function renderError(container, err, opt = {}) {
+  clear(container);
+  const kids = [
+    el('h2', { class: 'empty__title', text: opt.title || '出了点问题' }),
+    el('p', { class: 'empty__desc', text: errText(err) }),
+  ];
+  if (opt.actionText && opt.onAction) {
+    kids.push(el('button', { class: 'btn btn--primary', type: 'button', onclick: opt.onAction, text: opt.actionText }));
+  }
+  container.appendChild(el('div', { class: 'empty empty--error' }, kids));
+  return container;
+}
+
+/** 整页级「加载失败，请刷新重试」（7.7 第 2 条） */
+function renderLoadFailed(detail) {
+  const box = $('#bootfail');
+  if (!box) return;
+  clear(box);
+  box.appendChild(el('div', { class: 'bootfail__card' }, [
+    el('h2', { class: 'bootfail__title', text: '加载失败，请刷新重试' }),
+    el('p', { class: 'bootfail__desc', text: detail || '页面脚本未能启动。请检查网络后刷新；若反复出现，请清一下浏览器缓存。' }),
+    el('button', { class: 'btn btn--primary', type: 'button', onclick: () => location.reload(), text: '刷新' }),
+  ]));
+  box.hidden = false;
+}
+
+// ---------- 二次确认 ----------
+
+/**
+ * 二次确认弹窗（删除 / 撤销分享等危险操作必用）
+ * @returns {Promise<boolean>}
+ */
+function confirmDialog({ title, message, confirmText = '确定', cancelText = '取消', danger = false } = {}) {
+  return new Promise((resolve) => {
+    const modal = $('#modal');
+    if (!modal) { resolve(window.confirm(message || title || '确定吗？')); return; }
+    clear(modal);
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      modal.hidden = true;
+      clear(modal);
+      document.removeEventListener('keydown', onKey);
+      resolve(v);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') finish(false); };
+    document.addEventListener('keydown', onKey);
+
+    modal.appendChild(el('div', { class: 'modal__mask', onclick: () => finish(false) }));
+    modal.appendChild(el('div', { class: 'modal__box', role: 'dialog', 'aria-modal': 'true' }, [
+      el('h3', { class: 'modal__title', text: title || '请确认' }),
+      message ? el('p', { class: 'modal__msg', text: message }) : null,
+      el('div', { class: 'modal__actions' }, [
+        el('button', { class: 'btn', type: 'button', onclick: () => finish(false), text: cancelText }),
+        el('button', {
+          class: danger ? 'btn btn--danger' : 'btn btn--primary',
+          type: 'button',
+          onclick: () => finish(true),
+          text: confirmText,
+        }),
+      ]),
+    ]));
+    modal.hidden = false;
+  });
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const ui = { $, el, clear, escapeHtml, errText, showToast, showErrorBar, renderEmptyState, renderError, renderLoadFailed, confirmDialog };
+
+// ==================== image.js ====================
+/**
+ * js/image.js —— 图片处理（R6：先纠正 EXIF 方向，再压缩；双份输出）
+ *
+ * 铁律 5：立方体只渲染缩略图；EXIF 方向先纠正再缩放；
+ *         createObjectURL / revokeObjectURL 必须成对（由调用方在上传/渲染后回收）。
+ *
+ * 输出统一为 Blob：原图长边 ≤ MAX_EDGE_FULL，缩略图长边 ≤ MAX_EDGE_THUMB。
+ * 优先 WebP，浏览器不支持则退回 JPEG。
+ */
+
+
+// HEIC / HEIF 无法在大多数浏览器解码 —— 直接跳过并计入 skipped
+const UNSUPPORTED = new Set(['image/heic', 'image/heif']);
+function looksHeic(file) {
+  const t = (file.type || '').toLowerCase();
+  if (UNSUPPORTED.has(t)) return true;
+  const n = (file.name || '').toLowerCase();
+  return n.endsWith('.heic') || n.endsWith('.heif');
+}
+
+/**
+ * 解码并纠正 EXIF 方向。
+ * 优先 createImageBitmap(file, { imageOrientation: 'from-image' })；
+ * 不支持时回退 <img> + canvas（现代浏览器默认已应用 EXIF 方向）。
+ * @returns {Promise<ImageBitmap|HTMLImageElement>}
+ */
+async function decodeWithOrientation(file) {
+  if (looksHeic(file)) throw new Error('HEIC_UNSUPPORTED');
+  if (typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch (_) { /* 落到 img 回退 */ }
+  }
+  return await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('DECODE_FAILED')); };
+    img.src = url;
+  });
+}
+
+function dimsOf(src) {
+  if (src instanceof ImageBitmap) return { w: src.width, h: src.height };
+  return { w: src.naturalWidth, h: src.naturalHeight };
+}
+
+/** 把源画到长边 ≤ maxEdge 的 canvas，导出 Blob。 */
+function renderScaled(src, maxEdge) {
+  const { w, h } = dimsOf(src);
+  const scale = Math.min(1, maxEdge / Math.max(w, h));
+  const tw = Math.max(1, Math.round(w * scale));
+  const th = Math.max(1, Math.round(h * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = tw; canvas.height = th;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(src, 0, 0, tw, th);
+
+  return new Promise((resolve) => {
+    const tryType = (type) => canvas.toBlob((b) => resolve({ blob: b, width: tw, height: th, type }), type, JPEG_QUALITY);
+    canvas.toBlob((b) => {
+      if (b && b.type === 'image/webp') resolve({ blob: b, width: tw, height: th, type: 'image/webp' });
+      else tryType('image/jpeg');
+    }, 'image/webp', JPEG_QUALITY);
+  });
+}
+
+/** 原图（长边 ≤ MAX_EDGE_FULL） */
+async function makeFullBlob(src) {
+  return renderScaled(src, MAX_EDGE_FULL);
+}
+
+/** 缩略图（长边 ≤ MAX_EDGE_THUMB） */
+async function makeThumbBlob(src) {
+  return renderScaled(src, MAX_EDGE_THUMB);
+}
+
+/**
+ * 逐张处理一批文件。
+ * @param {FileList|File[]} files
+ * @param {(done:number,total:number)=>void} [onProgress]
+ * @returns {Promise<{results:Array<{fullBlob: Blob, thumbBlob: Blob, width:number, height:number, sizeBytes:number}>, skipped:number}>}
+ */
+async function handleFiles(files, onProgress) {
+  const list = Array.from(files || []);
+  const results = [];
+  let skipped = 0;
+  const total = list.length;
+  for (let i = 0; i < total; i++) {
+    const file = list[i];
+    try {
+      const src = await decodeWithOrientation(file);
+      const full = await makeFullBlob(src);
+      const thumb = await makeThumbBlob(src);
+      if (src instanceof ImageBitmap) src.close();
+      results.push({
+        fullBlob: full.blob,
+        thumbBlob: thumb.blob,
+        width: full.width,
+        height: full.height,
+        sizeBytes: (full.blob && full.blob.size) || 0,
+      });
+    } catch (e) {
+      // 解码失败（HEIC / 损坏文件）：跳过，不静默丢图，由调用方统一提示
+      skipped += 1;
+      console.warn('[image] 跳过一张无法处理的文件：', file && file.name, e && e.message);
+    }
+    if (onProgress) onProgress(i + 1, total);
+  }
+  return { results, skipped };
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const image = { decodeWithOrientation, makeFullBlob, makeThumbBlob, handleFiles };
+
+// ==================== storage.js ====================
+/**
+ * js/storage.js —— Supabase Storage（私有桶 photos）
+ *
+ * 铁律 6：路径格式一经确定不可改，桶策略靠第一段（album_id）判定归属。
+ *   固定为：photos/<albumId>/<memberId|solo>/<photoId>_full.webp
+ *          photos/<albumId>/<memberId|solo>/<photoId>_thumb.webp
+ * 铁律：桶必须 Private（M2-C 已建）；读取一律走短期签名 URL，绝不开 public。
+ */
+
+
+/** 计算原图 / 缩略图路径。memberId 为空（独享本）用字面量 'solo'。 */
+function photoPaths(albumId, memberId, photoId) {
+  const seg = memberId || 'solo';
+  return {
+    full: `${albumId}/${seg}/${photoId}_full.webp`,
+    thumb: `${albumId}/${seg}/${photoId}_thumb.webp`,
+  };
+}
+
+/** 上传原图 + 缩略图一对（R8 第 2 步）。返回路径。 */
+async function uploadPair(albumId, memberId, photoId, fullBlob, thumbBlob) {
+  const { full, thumb } = photoPaths(albumId, memberId, photoId);
+  await uploadOne(full, fullBlob);
+  await uploadOne(thumb, thumbBlob);
+  return { full, thumb };
+}
+
+async function uploadOne(path, blob) {
+  const { error } = await sb.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, blob, { contentType: blob.type || 'image/webp', upsert: true, cacheControl: '3600' });
+  if (error) throw error;
+}
+
+/** R8 回滚：删除一对文件（DB 插入失败时调用）。 */
+async function removePair(paths) {
+  if (!paths) return;
+  const list = [paths.full, paths.thumb].filter(Boolean);
+  if (!list.length) return;
+  const { error } = await sb.storage.from(STORAGE_BUCKET).remove(list);
+  if (error) throw error;
+}
+
+/** 签发缩略图短期签名 URL。 */
+async function signedThumbUrl(path, ttl = SIGNED_URL_TTL) {
+  return signedUrl(path, ttl);
+}
+
+/** 签发原图短期签名 URL（全屏看图用）。 */
+async function signedFullUrl(path, ttl = SIGNED_URL_TTL) {
+  return signedUrl(path, ttl);
+}
+
+async function signedUrl(path, ttl) {
+  const { data, error } = await sb.storage.from(STORAGE_BUCKET).createSignedUrl(path, ttl);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const storage = { photoPaths, uploadPair, removePair, signedThumbUrl, signedFullUrl };
+
+// ==================== db.js ====================
+/**
+ * js/db.js —— Postgres 数据访问（五张表）
+ *
+ * 全部走 RLS：每张查询都依赖当前登录态。无 session 时 Supabase 会直接拒绝。
+ * 排序（R7）：order_index 以 ORDER_STEP 递增；插入两之间取中间值。这里只负责「取」与「写」，
+ * 排序计算在上传/插入处完成。
+ */
+
+
+async function me() {
+  const { data, error } = await sb.auth.getUser();
+  if (error || !data.user) throw new Error('未登录');
+  return data.user;
+}
+
+// ===================== albums =====================
+
+/** 取或建独享本（每人最多 MAX_SOLO_ALBUM 本）。 */
+async function getOrCreateSoloAlbum() {
+  const u = await me();
+  const { data: existing } = await sb
+    .from('albums').select('id').eq('owner_id', u.id).eq('kind', 'solo').limit(1);
+  if (existing && existing.length) return existing[0].id;
+
+  const { count } = await sb
+    .from('albums').select('*', { count: 'exact', head: true })
+    .eq('owner_id', u.id).eq('kind', 'solo');
+  if (count >= MAX_SOLO_ALBUM) throw new Error(`独享本最多 ${MAX_SOLO_ALBUM} 本`);
+
+  const { data, error } = await sb
+    .from('albums').insert({ owner_id: u.id, kind: 'solo', title: DEFAULT_SOLO_TITLE })
+    .select('id').single();
+  if (error) throw error;
+  return data.id;
+}
+
+/** 种一棵家族树（每人最多 MAX_FAMILY_ALBUM 棵），并自动把建树者作为第一个果实。 */
+async function createFamilyAlbum(title, displayName) {
+  const u = await me();
+  const { count } = await sb
+    .from('albums').select('*', { count: 'exact', head: true })
+    .eq('owner_id', u.id).eq('kind', 'family');
+  if (count >= MAX_FAMILY_ALBUM) throw new Error(`家族树最多 ${MAX_FAMILY_ALBUM} 棵`);
+
+  const { data, error } = await sb
+    .from('albums').insert({ owner_id: u.id, kind: 'family', title: title || DEFAULT_FAMILY_TITLE })
+    .select('id').single();
+  if (error) throw error;
+  const albumId = data.id;
+
+  // 建树者的微信名 / 头像取自 profiles，回退「我」
+  const { data: prof } = await sb.from('profiles').select('display_name,avatar_url').eq('id', u.id).maybeSingle();
+  const name = (displayName && displayName.trim()) || (prof && prof.display_name) || '我';
+  const avatar = (prof && prof.avatar_url) || null;
+
+  const { data: mem, error: e2 } = await sb
+    .from('members').insert({
+      album_id: albumId, user_id: u.id, display_name: name,
+      relation: DEFAULT_FOUNDER_RELATION, generation: 0, order_index: 0,
+      avatar_url: avatar,
+    })
+    .select('id').single();
+  if (e2) throw e2;
+  return { albumId, memberId: mem.id };
+}
+
+/** 列出我创建的家族树。 */
+async function listMyTrees() {
+  const u = await me();
+  const { data, error } = await sb
+    .from('albums').select('id,title,kind,created_at')
+    .eq('owner_id', u.id).eq('kind', 'family').order('created_at');
+  if (error) throw error;
+  return data;
+}
+
+/** 取整棵树（成员节点），按 order_index 排序。 */
+async function getTree(albumId) {
+  const { data, error } = await sb
+    .from('members').select('*').eq('album_id', albumId).order('order_index');
+  if (error) throw error;
+  return data;
+}
+
+/** 取树的基本信息。 */
+async function getAlbum(albumId) {
+  const { data, error } = await sb.from('albums').select('*').eq('id', albumId).single();
+  if (error) throw error;
+  return data;
+}
+
+// ===================== members =====================
+
+async function addMember({ albumId, displayName, relation, parentMemberId }) {
+  // order_index：同层最大 + ORDER_STEP
+  const { data, error } = await sb
+    .from('members').insert({
+      album_id: albumId, display_name: displayName, relation: relation || null,
+      parent_member_id: parentMemberId || null, order_index: 0,
+    })
+    .select('id').single();
+  if (error) throw error;
+  return data.id;
+}
+
+async function updateMember(id, fields) {
+  const { error } = await sb.from('members').update(fields).eq('id', id);
+  if (error) throw error;
+}
+
+async function removeMember(id) {
+  const { error } = await sb.from('members').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ===================== photos =====================
+
+/** 列出相册照片；memberId 给定则只列该果实（独享本传 null）。 */
+async function listPhotos({ albumId, memberId }) {
+  let q = sb.from('photos').select('*').eq('album_id', albumId);
+  if (memberId) q = q.eq('member_id', memberId);
+  const { data, error } = await q.order('order_index');
+  if (error) throw error;
+  return data;
+}
+
+/** 全家福：整棵树所有照片按 order_index 混排。 */
+async function listAllPhotos(albumId) {
+  const { data, error } = await sb.from('photos').select('*').eq('album_id', albumId).order('order_index');
+  if (error) throw error;
+  return data;
+}
+
+/** 插入一张照片行（R8 第 3 步，前两步是压缩 + 上传）。 */
+async function insertPhotoRow(row) {
+  const { data, error } = await sb.from('photos').insert({
+    album_id: row.albumId,
+    member_id: row.memberId || null,
+    owner_id: row.ownerId,
+    storage_path: row.storagePath,
+    thumb_path: row.thumbPath,
+    name: row.name || '',
+    caption: row.caption || '',
+    width: row.width,
+    height: row.height,
+    size_bytes: row.sizeBytes,
+    order_index: row.orderIndex,
+  }).select('id').single();
+  if (error) throw error;
+  return data.id;
+}
+
+async function updatePhoto(id, fields) {
+  const { error } = await sb.from('photos').update(fields).eq('id', id);
+  if (error) throw error;
+}
+
+/** 删照片行（R8：先删 DB 行，再删 Storage 文件）。 */
+async function deletePhotoRow(id) {
+  const { error } = await sb.from('photos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ===================== 邀请入伙 =====================
+
+/**
+ * 接受邀请：把当前登录用户绑到「尚未入伙（user_id 为 null）」的果实。
+ * 依赖 schema.sql 里的 SECURITY DEFINER 函数 accept_invite(p_member_id)。
+ * （该函数尚未重跑进库前，此调用会失败 —— 需主公确认后把函数落库。）
+ */
+async function acceptInvite(memberId) {
+  const { error } = await sb.rpc('accept_invite', { p_member_id: memberId });
+  if (error) throw error;
+}
+
+/** 把当前用户自己的微信头像写进「我认领的那个果实」（满足「果实头像=微信头像」）。 */
+async function setMemberAvatar(memberId, avatarUrl) {
+  const u = await me();
+  const { error } = await sb.from('members')
+    .update({ avatar_url: avatarUrl || null })
+    .eq('id', memberId).eq('user_id', u.id);
+  if (error) throw error;
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const db = { getOrCreateSoloAlbum, createFamilyAlbum, listMyTrees, getTree, getAlbum, addMember, updateMember, removeMember, listPhotos, listAllPhotos, insertPhotoRow, updatePhoto, deletePhotoRow, acceptInvite, setMemberAvatar };
+
+// ==================== backup.js ====================
+/**
+ * js/backup.js —— 本地备份（7.6 / H5）
+ *
+ * 铁律：备份是「整本照片 + 元数据」的离线 zip；导出用 JSZip 在客户端完成，照片原文件一并打进包，
+ * 不依赖任何外部服务。导入时新建一本（不覆盖原数据），并重建成员映射与照片。
+ * 防丢提醒：每次导出记录时间到 localStorage（LS_PREFIX 前缀），超过 BACKUP_REMIND_DAYS 天提示。
+ */
+
+
+var JSZip = window.JSZip;
+
+function triggerDownload(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function safeName(s) { return (s || 'album').replace(/[^\w一-龥-]+/g, '_'); }
+
+/** 导出整本为 zip 并触发下载。 */
+async function exportBackup(albumId) {
+  if (!JSZip) throw new Error('备份组件未加载');
+  const album = await db.getAlbum(albumId);
+  const members = await db.getTree(albumId);
+  const photos = await db.listPhotos({ albumId });
+
+  const zip = new JSZip();
+  const photoMeta = [];
+  for (const p of photos) {
+    const { data, error } = await sb.storage.from(STORAGE_BUCKET).download(p.storage_path);
+    if (error || !data) continue;
+    const fname = `photos/${p.id}.bin`;
+    zip.file(fname, data);
+    photoMeta.push({
+      id: p.id, member_id: p.member_id, name: p.name, caption: p.caption,
+      width: p.width, height: p.height, order_index: p.order_index, file: fname,
+    });
+  }
+
+  const manifest = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    album: { kind: album.kind, title: album.title },
+    members, photos: photoMeta,
+  };
+  zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  triggerDownload(blob, `${safeName(album.title)}_${Date.now()}.zip`);
+  localStorage.setItem(LS_PREFIX + 'lastBackup', String(Date.now()));
+}
+
+function daysSinceBackup() {
+  const t = localStorage.getItem(LS_PREFIX + 'lastBackup');
+  if (!t) return Infinity;
+  return Math.floor((Date.now() - Number(t)) / 86400000);
+}
+
+function shouldRemindBackup() {
+  return daysSinceBackup() >= BACKUP_REMIND_DAYS;
+}
+
+/** 从 zip 文件导入为「新建」的一本（不覆盖原数据）。返回新 albumId。 */
+async function importBackup(file) {
+  if (!JSZip) throw new Error('备份组件未加载');
+  const zip = await JSZip.loadAsync(file);
+  const manRaw = await zip.file('manifest.json').async('string');
+  const man = JSON.parse(manRaw);
+  const me = (await sb.auth.getUser()).data.user;
+  if (!me) throw new Error('请先登录');
+
+  const { data: album } = await sb.from('albums').insert({
+    owner_id: me.id, kind: man.album.kind, title: (man.album.title || '相册') + '（导入）',
+  }).select('id').single();
+  const albumId = album.id;
+
+  const idMap = {};
+  for (const m of man.members || []) {
+    const { data: nm } = await sb.from('members').insert({
+      album_id: albumId,
+      display_name: m.display_name,
+      relation: m.relation,
+      generation: m.generation,
+      parent_member_id: m.parent_member_id ? (idMap[m.parent_member_id] || null) : null,
+      order_index: m.order_index,
+    }).select('id').single();
+    idMap[m.id] = nm.id;
+  }
+
+  for (const p of man.photos || []) {
+    const blob = await zip.file(p.file).async('blob');
+    const photoId = crypto.randomUUID();
+    const memberId = p.member_id ? idMap[p.member_id] : null;
+    // 备份里只有一份原图，缩略图用同一份兜底（清晰度足够回看）
+    const paths = await storage.uploadPair(albumId, memberId, photoId, blob, blob);
+    await db.insertPhotoRow({
+      albumId, memberId, ownerId: me.id,
+      storagePath: paths.full, thumbPath: paths.thumb,
+      name: p.name || '', caption: p.caption || '',
+      width: p.width, height: p.height, sizeBytes: blob.size, orderIndex: p.order_index,
+    });
+  }
+  return albumId;
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const backup = { exportBackup, daysSinceBackup, shouldRemindBackup, importBackup };
+
+// ==================== share.js ====================
+/**
+ * js/share.js —— 只读分享（S-A1 / S-A2 / 里程碑 8）
+ *
+ * 铁律 3：分享 token 必须 32 字节随机（crypto.getRandomValues），绝不用自增 id / 时间戳。
+ * 铁律：生成分享链接走 RLS 自己的 insert（created_by = 当前用户）；读取走边缘函数 share-open，
+ *       边缘函数内部只调 SECURITY DEFINER 的 share_get，全程不碰 service_role 密钥。
+ */
+
+
+/** 32 字节随机十六进制 token（铁律 3）。 */
+function randomToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (x) => x.toString(16).padStart(2, '0')).join('');
+}
+
+function shareUrl(token) {
+  return SITE_BASE_URL + SHARE_PATH_PREFIX + token;
+}
+
+/** 生成独享本只读分享链接（member_id = null → 整本）。 */
+async function createSoloShare(albumId) {
+  const token = randomToken();
+  const me = await getUser();
+  const { data, error } = await sb.from('share_links').insert({
+    album_id: albumId, token, created_by: me.id, member_id: null,
+  }).select('token').single();
+  if (error) throw error;
+  return shareUrl(data.token);
+}
+
+/** 生成家族树只读分享链接。memberId 为空 = 整棵树，否则只分享某个果实。 */
+async function createTreeShare(albumId, memberId = null) {
+  const token = randomToken();
+  const me = await getUser();
+  const { data, error } = await sb.from('share_links').insert({
+    album_id: albumId, token, created_by: me.id, member_id: memberId,
+  }).select('token').single();
+  if (error) throw error;
+  return shareUrl(data.token);
+}
+
+/**
+ * 通过边缘函数读取分享数据（匿名即可，函数内部走 SECURITY DEFINER）。
+ * @returns {Promise<{album:object, members:Array, photos:Array}>}
+ */
+async function fetchShare(token) {
+  const { data, error } = await sb.functions.invoke('share-open', {
+    method: 'POST',
+    body: { token },
+  });
+  if (error) throw error;
+  if (!data || data.ok === false) {
+    const e = new Error((data && data.error) || 'LINK_INVALID');
+    e.code = (data && data.error) || 'LINK_INVALID';
+    throw e;
+  }
+  return data;
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const share = { createSoloShare, createTreeShare, fetchShare };
+
+// ==================== auth.js ====================
+/**
+ * js/auth.js —— 账号与鉴权（Supabase 匿名登录 + 昵称/头像资料）
+ *
+ * 设计（2026-09-24 与产品主共同决定，取代开工令默认的邮箱+密码体系）：
+ * - 不发邮箱、不设备用密码。打开即匿名登录（零步骤），满足「老人家操作从简」。
+ * - 身份只是「本机匿名账号」，昵称/头像是用户自己填的微信名 / 微信头像链接或上传图。
+ *   昵称可被冒充（产品取舍：数据安全只看「照片不外泄」，由私有桶 + RLS 保证，无须真·微信 OAuth）。
+ * - 头像存 profiles.avatar_url 文本字段：粘贴的链接，或上传后转成的 data URL。
+ *   不进 Storage —— photos 桶 RLS 要求路径首段为 album_id，头像无处可放，且 data URL 零依赖、永远能显示。
+ *
+ * 铁律：
+ * - sb 为 null（初始化失败）时所有函数抛「云端不可用」，由调用方降级提示。
+ * - 绝不把任何凭证写进 localStorage（匿名会话由 Supabase 客户端托管，应用层不碰）。
+ */
+
+
+/** 取当前 session（未登录返回 null） */
+async function getSession() {
+  if (!sb) return null;
+  const { data } = await sb.auth.getSession();
+  return data.session;
+}
+
+/** 取当前 user（匿名用户也有 id） */
+async function getUser() {
+  if (!sb) return null;
+  const { data } = await sb.auth.getUser();
+  return data.user;
+}
+
+function guard() {
+  if (!sb) throw new Error(sbError || '云端尚未就绪，请检查网络后刷新');
+}
+
+/**
+ * 确保有会话：无则匿名登录（自动建匿名用户，零步骤）。
+ * @returns {Promise<object|null>} session
+ */
+async function ensureSession() {
+  guard();
+  const { data } = await sb.auth.getSession();
+  if (data.session) return data.session;
+  const res = await sb.auth.signInAnonymously();
+  if (res.error) throw new Error(res.error.message || '匿名登录失败');
+  return res.data.session;
+}
+
+/** 读本人 profiles 行（可能为空） */
+async function getProfile() {
+  guard();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  return data || null;
+}
+
+/** upsert 本人资料。avatarUrl 为链接或 data URL（空串/ null 表示清除） */
+async function saveProfile({ displayName, avatarUrl }) {
+  guard();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) throw new Error('未登录');
+  const { error } = await sb.from('profiles').upsert(
+    { id: user.id, display_name: (displayName || '').trim(), avatar_url: avatarUrl || null },
+    { onConflict: 'id' },
+  );
+  if (error) throw new Error(error.message || '保存资料失败');
+}
+
+/** 登出（会丢失本机匿名身份，独享本将需重新认领，慎点） */
+async function signOut() {
+  guard();
+  const { error } = await sb.auth.signOut();
+  if (error) throw new Error(error.message || '退出失败');
+}
+
+/** 订阅登录态变化 */
+function onAuthChange(cb) {
+  if (!sb) return () => {};
+  const { data } = sb.auth.onAuthStateChange((event, session) => cb(event, session));
+  return () => data.subscription.unsubscribe();
+}
+
+// ---- 鍛藉悕绌洪棿妗ユ帴锛堝師 import * as锛?---
+const auth = { getSession, getUser, ensureSession, getProfile, saveProfile, signOut, onAuthChange };
+
+// ==================== cube.js ====================
+/**
+ * js/cube.js —— 虚拟 3D 立方体引擎（产品心脏，R1 / R2）
+ *
+ * 【铁律 4】引擎与数据源完全解耦：只吃
+ *   photos: Array<{ thumbUrl, fullUrl, name, caption }>
+ * 独享本 / 果实 / 分享页 / 全家福 全部复用同一份。
+ *
+ * 【R1 虚拟化】DOM 中真实面恒为 2*RENDER_WINDOW+1 = 5 个（当前、左右各 2）。
+ *   每完成一次吸附，离当前最远的面被回收，内容换成新待显示张，定位到背面。
+ *   首尾用环形取模（mod）衔接，不出现空洞。
+ * 【R2 手势】Pointer Events 统一鼠标/触摸；拖动中关掉 transition；松手惯性后吸附到最近 90°。
+ *   位移 > 屏宽 × MIN_SWIPE_SPEED 判为「滑动」，否则判为「点击」（先判定再执行，不并存）。
+ */
+
+
+const FACE_COUNT = 2 * RENDER_WINDOW + 1;
+
+function mod(n, m) { return ((n % m) + m) % m; }
+
+function initCube(container, photos, opts = {}) {
+  if (!container) throw new Error('cube: container 缺失');
+  if (!Array.isArray(photos) || photos.length === 0) throw new Error('cube: photos 为空');
+
+  const revoke = !!opts.revokeOnDestroy;
+  const pool = [];
+  let angle = (opts.startIndex || 0) * -90;   // 起始张朝向正面
+  let curIdx = 0;
+  let raf = 0;
+  let dragging = false;
+  let startX = 0, startAngle = 0, lastX = 0, totalDx = 0, velocity = 0;
+
+  const stage = document.createElement('div');
+  stage.className = 'cube__stage';
+
+  for (let i = 0; i < FACE_COUNT; i++) {
+    const img = document.createElement('img');
+    img.className = 'cube__img';
+    img.draggable = false;
+    img.alt = '';
+    const face = document.createElement('div');
+    face.className = 'cube__face';
+    face.appendChild(img);
+    const cap = document.createElement('div');
+    cap.className = 'cube__cap';
+    face.appendChild(cap);
+    stage.appendChild(face);
+    pool.push({ face, img, cap, idx: null });
+  }
+
+  const counter = document.createElement('div');
+  counter.className = 'cube__counter';
+
+  container.appendChild(stage);
+  container.appendChild(counter);
+  container.classList.add('cube');
+
+  const N = () => photos.length;
+  const width = () => container.clientWidth || 320;
+  const radius = () => (faceWidth() / 2) * 1.05;
+  const faceWidth = () => {
+    const f = pool[0] && pool[0].face;
+    return f ? f.clientWidth : width() * 0.78;
+  };
+
+  function layout() {
+    const n = N();
+    const center = Math.round(angle / 90);
+    curIdx = mod(center, n);
+    const win = [];
+    for (let d = -RENDER_WINDOW; d <= RENDER_WINDOW; d++) win.push(center + d);
+
+    pool.forEach((f, i) => {
+      const k = win[i];
+      const photo = photos[mod(k, n)];
+      f.face.style.transform = `rotateY(${k * 90 - angle}deg) translateZ(${radius()}px)`;
+      if (f.idx !== k) {
+        f.img.src = photo.thumbUrl;
+        f.cap.textContent = [photo.name, photo.caption].filter(Boolean).join(' · ');
+        f.idx = k;
+      }
+    });
+
+    if (opts.onIndexChange) opts.onIndexChange(curIdx, n);
+    if (counter) counter.textContent = `第 ${curIdx + 1} / ${n} 张`;
+  }
+
+  function animate() {
+    if (dragging) { raf = 0; return; }
+    if (Math.abs(velocity) > 0.4) {
+      angle += velocity;
+      velocity *= INERTIA_DECAY;
+      layout();
+      raf = requestAnimationFrame(animate);
+    } else {
+      const target = Math.round(angle / 90) * 90;
+      const diff = target - angle;
+      if (Math.abs(diff) > 0.3) {
+        angle += diff * 0.22;
+        layout();
+        raf = requestAnimationFrame(animate);
+      } else {
+        angle = target;
+        velocity = 0;
+        layout();
+        raf = 0;
+      }
+    }
+  }
+
+  function kick() { if (!raf) raf = requestAnimationFrame(animate); }
+
+  // ---------- 指针手势（R2）----------
+  function onDown(e) {
+    dragging = true;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    velocity = 0;
+    startX = e.clientX; startAngle = angle; lastX = e.clientX; totalDx = 0;
+    try { container.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    totalDx = Math.abs(dx);
+    angle = startAngle + (dx / width()) * 180;   // R2 角度公式
+    lastX = e.clientX;
+    layout();
+  }
+  function onUp(e) {
+    if (!dragging) return;
+    dragging = false;
+    try { container.releasePointerCapture(e.pointerId); } catch (_) {}
+    // 点击 vs 滑动：先判定再执行（R2）
+    if (totalDx < MIN_SWIPE_SPEED * width()) {
+      if (opts.onTap) opts.onTap(curIdx, photos[curIdx]);
+    } else {
+      // 用最近一次位移估算松手速度
+      velocity = ((e.clientX - lastX) / width()) * 180;
+      if (Math.abs(velocity) < 1) velocity = 0;
+    }
+    kick();
+  }
+
+  container.addEventListener('pointerdown', onDown);
+  container.addEventListener('pointermove', onMove);
+  container.addEventListener('pointerup', onUp);
+  container.addEventListener('pointercancel', onUp);
+
+  layout();
+
+  // ---------- 控制器 ----------
+  function destroy() {
+    if (raf) cancelAnimationFrame(raf);
+    container.removeEventListener('pointerdown', onDown);
+    container.removeEventListener('pointermove', onMove);
+    container.removeEventListener('pointerup', onUp);
+    container.removeEventListener('pointercancel', onUp);
+    if (revoke) {
+      photos.forEach((p) => {
+        if (p.thumbUrl && p.thumbUrl.startsWith('blob:')) URL.revokeObjectURL(p.thumbUrl);
+        if (p.fullUrl && p.fullUrl.startsWith('blob:')) URL.revokeObjectURL(p.fullUrl);
+      });
+    }
+    container.classList.remove('cube');
+    stage.remove();
+    counter.remove();
+  }
+
+  return {
+    destroy,
+    getCurrentIndex: () => curIdx,
+    getCount: () => N(),
+    next: () => { angle = Math.round(angle / 90) * 90 - 90; kick(); },
+    prev: () => { angle = Math.round(angle / 90) * 90 + 90; kick(); },
+  };
+}
+
+// ==================== tree.js ====================
+/**
+ * js/tree.js —— 3D 家族树（CSS 3D 环形分层，7.5 / R3）
+ *
+ * 铁律：布局算法是「纯函数」，不碰 DOM、不碰 Supabase：
+ *   - recalcGenerations(members)  由 parent 推导 generation，全树重算（R3）
+ *   - detectCycle(members,id,newParent)  防环（R3）
+ *   - layoutTree(members)  算每层半径、每果实角度、垂直落差
+ * 渲染只消费纯函数产物。
+ */
+
+
+/**
+ * 全树重算辈分。generation(自己) = generation(父) + 1；无父者为 0。
+ * 父亲不存在（悬空）时按 0 处理，避免崩溃。
+ * @returns {Map<id, number>}
+ */
+function recalcGenerations(members) {
+  const byId = new Map(members.map((m) => [m.id, m]));
+  const gen = new Map();
+  const visit = (id, depth) => {
+    if (depth > members.length + 2) return; // 防御：极端环（应由 detectCycle 在写入前挡住）
+    const m = byId.get(id);
+    if (!m) { gen.set(id, 0); return; }
+    if (gen.has(id)) return;
+    if (!m.parent_member_id || !byId.has(m.parent_member_id)) {
+      gen.set(id, 0);
+      return;
+    }
+    visit(m.parent_member_id, depth + 1);
+    gen.set(id, (gen.get(m.parent_member_id) || 0) + 1);
+  };
+  for (const m of members) visit(m.id, 0);
+  return gen;
+}
+
+/**
+ * 防环：把 id 的 parent 设为 newParentId 是否会成环。
+ * 即从 newParentId 沿 parent_member_id 向上走，若走到 id 本身 → 成环。
+ * @returns {boolean} true = 会形成环
+ */
+function detectCycle(members, id, newParentId) {
+  if (!newParentId) return false;
+  const byId = new Map(members.map((m) => [m.id, m]));
+  let cur = byId.get(newParentId);
+  const seen = new Set();
+  while (cur) {
+    if (cur.id === id) return true;
+    if (seen.has(cur.id)) return false; // 已有环，不再追
+    seen.add(cur.id);
+    cur = cur.parent_member_id ? byId.get(cur.parent_member_id) : null;
+  }
+  return false;
+}
+
+/**
+ * 布局：返回每个成员的可视属性。
+ * 每一辈分 = 一层；第 g 层垂直 translateY(g * GAP)；同层果实环形均布。
+ * @returns {Array<{id, generation, angle, radius, y}>}
+ */
+function layoutTree(members) {
+  const genMap = recalcGenerations(members);
+  const layers = new Map(); // generation -> [members]
+  for (const m of members) {
+    const g = genMap.get(m.id) || 0;
+    if (!layers.has(g)) layers.set(g, []);
+    layers.get(g).push(m);
+  }
+  const out = [];
+  for (const [g, list] of [...layers.entries()].sort((a, b) => a[0] - b[0])) {
+    const count = list.length;
+    const radius = Math.max(TREE_MIN_RADIUS, count * TREE_RADIUS_PER_MEMBER);
+    // 同层按 order_index，缺省按 created_at，保证稳定不跳变
+    const sorted = [...list].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+    sorted.forEach((m, i) => {
+      const angle = count === 1 ? 0 : (360 / count) * i;
+      out.push({ id: m.id, generation: g, angle, radius, y: g * TREE_LAYER_GAP });
+    });
+  }
+  return out;
+}
+
+// ===================== 渲染 =====================
+
+/**
+ * 渲染 3D 树。
+ * @param {HTMLElement} container
+ * @param {Array} members  原始成员（含 parent_member_id / user_id / display_name / relation / order_index）
+ * @param {{onMemberTap?:(m:object)=>void, avatarOf?:(id:string)=>string|null}} opts
+ */
+function renderTree(container, members, opts = {}) {
+  const layout = layoutTree(members);
+  const byId = new Map(members.map((m) => [m.id, m]));
+  const many = members.length > TREE_DEGRADE_COUNT;
+
+  let rotY = -20, tiltX = 8, zoom = 1;
+  const scene = document.createElement('div');
+  scene.className = 'tree__scene';
+  scene.style.transformStyle = 'preserve-3d';
+
+  const nodes = new Map();
+  for (const item of layout) {
+    const m = byId.get(item.id);
+    const joined = !!m.user_id;
+    const node = document.createElement('div');
+    node.className = 'tree__fruit' + (joined ? '' : ' tree__fruit--empty');
+    node.style.transform = `translate(-50%,-50%) translateY(${item.y}px) rotateY(${item.angle}deg) translateZ(${item.radius}px)`;
+    node.dataset.id = item.id;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'tree__avatar';
+    const av = opts.avatarOf && opts.avatarOf(item.id);
+    if (joined && av) {
+      const img = document.createElement('img');
+      img.src = av; img.alt = ''; img.draggable = false;
+      avatar.appendChild(img);
+    } else {
+      avatar.textContent = joined ? (m.display_name || '?').slice(0, 1) : '?';
+    }
+    node.appendChild(avatar);
+
+    const label = document.createElement('div');
+    label.className = 'tree__label';
+    label.textContent = [m.relation, m.display_name].filter(Boolean).join('·');
+    node.appendChild(label);
+
+    if (!many) {
+      const glow = document.createElement('div');
+      glow.className = 'tree__glow';
+      node.appendChild(glow);
+    }
+
+    node.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (opts.onMemberTap) opts.onMemberTap(m);
+    });
+
+    scene.appendChild(node);
+    nodes.set(item.id, node);
+  }
+
+  applyTransform();
+  function applyTransform() {
+    scene.style.transform = `translateZ(-260px) rotateX(${tiltX}deg) rotateY(${rotY}deg) scale(${zoom})`;
+  }
+
+  container.appendChild(scene);
+  container.classList.add('tree');
+
+  // ---------- 拖拽旋转 ----------
+  let dragging = false, lastX = 0, lastY = 0, moved = 0;
+  function down(e) { dragging = true; lastX = e.clientX; lastY = e.clientY; moved = 0; try { container.setPointerCapture(e.pointerId); } catch (_) {} }
+  function move(e) {
+    if (!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    moved += Math.abs(dx) + Math.abs(dy);
+    rotY += dx * 0.5;
+    tiltX = Math.max(-30, Math.min(60, tiltX - dy * 0.2));
+    lastX = e.clientX; lastY = e.clientY;
+    applyTransform();
+  }
+  function up() { dragging = false; }
+  container.addEventListener('pointerdown', down);
+  container.addEventListener('pointermove', move);
+  container.addEventListener('pointerup', up);
+  container.addEventListener('pointercancel', up);
+
+  // ---------- 滚轮缩放 ----------
+  function wheel(e) {
+    e.preventDefault();
+    zoom = Math.max(TREE_ZOOM_MIN, Math.min(TREE_ZOOM_MAX, zoom * (e.deltaY < 0 ? 1.08 : 0.92)));
+    applyTransform();
+  }
+  container.addEventListener('wheel', wheel, { passive: false });
+
+  // ---------- 双指捏合缩放 ----------
+  const pts = new Map();
+  let pinchStart = 0, zoomStart = 1;
+  container.addEventListener('pointerdown', (e) => { pts.set(e.pointerId, e); });
+  container.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, e);
+    if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      if (!pinchStart) { pinchStart = d; zoomStart = zoom; }
+      else { zoom = Math.max(TREE_ZOOM_MIN, Math.min(TREE_ZOOM_MAX, zoomStart * (d / pinchStart))); applyTransform(); }
+    }
+  });
+  const dropPt = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinchStart = 0; };
+  container.addEventListener('pointerup', dropPt);
+  container.addEventListener('pointercancel', dropPt);
+
+  return {
+    destroy() {
+      container.removeEventListener('pointerdown', down);
+      container.removeEventListener('pointermove', move);
+      container.removeEventListener('pointerup', up);
+      container.removeEventListener('pointercancel', up);
+      container.removeEventListener('wheel', wheel);
+      container.classList.remove('tree');
+      scene.remove();
+    },
+    rotateBy(d) { rotY += d; applyTransform(); },
+    zoomBy(f) { zoom = Math.max(TREE_ZOOM_MIN, Math.min(TREE_ZOOM_MAX, zoom * f)); applyTransform(); },
+  };
+}
+
+// ==================== app.20260924c.js ====================
+/**
+ * js/app.js —— 入口：hash 路由 + 全局错误捕获 + 启动检查 + 登录态
+ *
+ * 【里程碑 3】在骨架基础上接入：顶部登录态栏、#/login 页（登录/注册/找回密码）、
+ * 受保护路由的登录守卫。supabase.js 初始化失败（sb 为 null）时，全局降级提示，
+ * 不再进入依赖云端的功能。
+ */
+
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function svg(viewBox, paths) {
+  const node = document.createElementNS(SVG_NS, 'svg');
+  node.setAttribute('viewBox', viewBox);
+  node.setAttribute('width', '30');
+  node.setAttribute('height', '30');
+  node.setAttribute('fill', 'none');
+  node.setAttribute('stroke', 'currentColor');
+  node.setAttribute('stroke-width', '1.6');
+  node.setAttribute('stroke-linecap', 'round');
+  node.setAttribute('stroke-linejoin', 'round');
+  for (const d of paths) {
+    const p = document.createElementNS(SVG_NS, 'path');
+    p.setAttribute('d', d);
+    node.appendChild(p);
+  }
+  return node;
+}
+
+const iconCube = () => svg('0 0 24 24', [
+  'M12 2.8 21 7.4v9.2L12 21.2 3 16.6V7.4z',
+  'M3 7.4 12 12l9-4.6',
+  'M12 12v9.2',
+]);
+const iconTree = () => svg('0 0 24 24', [
+  'M12 21.5v-6',
+  'M12 15.5 6.5 11',
+  'M12 15.5 17.5 11',
+  'M12 3.2 5.8 9.6h12.4z',
+  'M8.6 9.6 5.4 13.4h6.2z',
+  'M15.4 9.6l3.2 3.8H12.4z',
+]);
+
+// ===================== 会话状态 =====================
+
+const state = { session: null, user: null, profile: null, redirectTo: '#/' };
+
+function displayName() {
+  if (state.profile && state.profile.display_name) return state.profile.display_name;
+  if (state.user) return '我';
+  return '';
+}
+
+async function refreshSession() {
+  try {
+    state.session = await auth.getSession();
+    state.user = state.session ? await auth.getUser() : null;
+    state.profile = state.user ? await auth.getProfile() : null;
+  } catch (e) {
+    console.error('[session]', e);
+    state.session = null;
+    state.user = null;
+    state.profile = null;
+  }
+}
+
+// ===================== 顶部登录态栏 =====================
+
+function renderChrome(root) {
+  const left = ui.el('div', { class: 'topbar__left', text: '3D 旋转图册' });
+  if (state.user) {
+    const av = (state.profile && state.profile.avatar_url) || '';
+    const avatar = ui.el('div', { class: 'topbar__av' });
+    const paint = () => {
+      ui.clear(avatar);
+      if (av) {
+        const im = ui.el('img', { src: av, alt: '' });
+        im.onerror = () => { ui.clear(avatar); avatar.appendChild(ui.el('span', { text: displayName().slice(0, 1) || '我' })); };
+        avatar.appendChild(im);
+      } else {
+        avatar.appendChild(ui.el('span', { text: displayName().slice(0, 1) || '我' }));
+      }
+    };
+    paint();
+    const chip = ui.el('div', { class: 'userchip', text: displayName() });
+    const edit = ui.el('button', {
+      class: 'btn btn--ghost', type: 'button', text: '编辑',
+      onclick: async () => { await openProfileModal(); render(); },
+    });
+    root.appendChild(ui.el('div', { class: 'topbar' }, [left, ui.el('div', { class: 'topbar__user' }, [avatar, chip, edit])]));
+  } else {
+    root.appendChild(ui.el('div', { class: 'topbar' }, [left]));
+  }
+}
+
+// ===================== 登录守卫 =====================
+
+const PROTECTED = new Set(['solo', 'trees', 'tree', 'member']);
+
+function requireAuth() {
+  if (state.session) return true;
+  ui.renderEmptyState(ui.$('#app'), {
+    title: '还没连上',
+    desc: '登录失败，请刷新页面或检查网络后重试。',
+    actionText: '刷新',
+    onAction: () => location.reload(),
+  });
+  return false;
+}
+
+// ===================== 页面：首页 =====================
+
+function renderHome(root) {
+  const card = (title, desc, badgeClass, icon, hash) => ui.el('button', {
+    class: 'card', type: 'button',
+    onclick: () => { location.hash = hash; },
+  }, [
+    ui.el('span', { class: `card__badge ${badgeClass}` }, [icon]),
+    ui.el('span', {}, [
+      ui.el('span', { class: 'card__title', text: title }),
+      ui.el('span', { class: 'card__desc', text: desc }),
+    ]),
+  ]);
+  root.appendChild(ui.el('div', { class: 'brand' }, [
+    ui.el('h1', { class: 'brand__title', text: '3D 旋转图册' }),
+    ui.el('p', { class: 'brand__sub', text: '把照片翻成一本会转的册子' }),
+  ]));
+  root.appendChild(ui.el('div', { class: 'cards' }, [
+    card('我的独享本', '只给自己看的私人相册，也能生成一条只读链接发给别人', '', iconCube(), '#/solo'),
+    card('家族树', '一家人各自往同一棵树上挂照片，一个果实就是一位家人', 'card__badge--tree', iconTree(), '#/tree'),
+  ]));
+
+  // H5：超过 BACKUP_REMIND_DAYS 天未备份，本会话提示一次
+  if (backup.shouldRemindBackup() && !window.__BACKUP_WARNED__) {
+    window.__BACKUP_WARNED__ = true;
+    ui.showToast(`已超过 ${BACKUP_REMIND_DAYS} 天未备份，建议导出一个备份以防丢图`, 'info');
+  }
+}
+
+// ===================== 资料卡（昵称 + 微信头像）=====================
+
+/** 把上传的头像压成 160×160 正方形 JPEG data URL（小、永远能显示、不依赖网络） */
+async function avatarDataUrl(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error('图片读取失败'));
+      i.src = url;
+    });
+    const S = 160;
+    const cv = document.createElement('canvas');
+    cv.width = S; cv.height = S;
+    const ctx = cv.getContext('2d');
+    const side = Math.min(img.width, img.height);
+    ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, S, S);
+    return cv.toDataURL('image/jpeg', 0.82);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * 资料卡弹窗：填微信名 + 选头像（粘贴微信头像链接或上传一张）。
+ * 首次进入强制填写；之后可随时「编辑」。返回 Promise<boolean>（是否保存）。
+ */
+function openProfileModal() {
+  return new Promise((resolve) => {
+    const modal = ui.$('#modal');
+    if (!modal) { resolve(false); return; }
+    const profile = state.profile || {};
+    let pending = profile.avatar_url || '';   // 当前/待保存头像（链接或 data URL）
+
+    const nameInput = ui.el('input', {
+      class: 'input', type: 'text', placeholder: '你的微信名', maxlength: '60', value: profile.display_name || '',
+    });
+    const linkInput = ui.el('input', {
+      class: 'input', type: 'text', placeholder: '微信头像链接（选填，可粘贴）', maxlength: '2000',
+    });
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none';
+
+    const preview = ui.el('div', { class: 'avatar-prev' });
+    const paintPreview = (src) => {
+      ui.clear(preview);
+      if (src) {
+        const im = ui.el('img', { src, alt: '' });
+        im.onerror = () => { ui.clear(preview); preview.appendChild(ui.el('div', { class: 'avatar-prev__init', text: (nameInput.value || '我').slice(0, 1) })); };
+        preview.appendChild(im);
+      } else {
+        preview.appendChild(ui.el('div', { class: 'avatar-prev__init', text: (nameInput.value || '我').slice(0, 1) }));
+      }
+    };
+    paintPreview(pending);
+
+    fileInput.onchange = async () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      try {
+        pending = await avatarDataUrl(f);
+        linkInput.value = '';
+        paintPreview(pending);
+      } catch (e) { ui.showToast('头像处理失败', 'error'); }
+    };
+    linkInput.addEventListener('input', () => {
+      if (linkInput.value.trim()) { pending = linkInput.value.trim(); paintPreview(pending); }
+    });
+
+    const msg = ui.el('p', { class: 'empty__desc', text: '' });
+    const saveBtn = ui.el('button', { class: 'btn btn--primary', type: 'button', text: '保存并进入' });
+    let done = false;
+    const finish = async () => {
+      if (done) return;
+      const name = nameInput.value.trim();
+      if (!name) { msg.textContent = '请填一下你的微信名'; return; }
+      saveBtn.disabled = true; msg.textContent = '保存中…';
+      try {
+        await auth.saveProfile({ displayName: name, avatarUrl: pending || null });
+        state.profile = { ...(state.profile || {}), display_name: name, avatar_url: pending || null };
+        done = true;
+        modal.hidden = true; ui.clear(modal);
+        resolve(true);
+      } catch (e) {
+        msg.textContent = ui.errText(e);
+        saveBtn.disabled = false;
+      }
+    };
+    saveBtn.onclick = finish;
+
+    const canSkip = !!(profile.display_name);
+    const mask = ui.el('div', { class: 'modal__mask', onclick: () => {
+      if (canSkip) { modal.hidden = true; ui.clear(modal); resolve(false); }
+    } });
+
+    ui.clear(modal);
+    modal.appendChild(mask);
+    modal.appendChild(ui.el('div', { class: 'modal__box', role: 'dialog', 'aria-modal': 'true' }, [
+      ui.el('h3', { class: 'modal__title', text: profile.display_name ? '编辑资料' : '先填一下资料' }),
+      ui.el('p', { class: 'modal__msg', text: profile.display_name ? '' : '填个微信名就能用；头像可选，粘贴微信头像链接或上传一张都行。' }),
+      preview,
+      ui.el('div', { class: 'field' }, [ui.el('label', { text: '微信名' }), nameInput]),
+      ui.el('div', { class: 'field' }, [ui.el('label', { text: '头像（链接或上传）' }), linkInput]),
+      ui.el('button', { class: 'btn btn--ghost', type: 'button', text: '上传一张照片', onclick: () => fileInput.click() }),
+      fileInput,
+      msg,
+      ui.el('div', { class: 'modal__actions' }, [saveBtn]),
+    ]));
+    modal.hidden = false;
+    nameInput.focus();
+  });
+}
+
+// ===================== 页面：独享本闭环（里程碑 6）=====================
+
+async function renderSolo(root) {
+  destroyActiveCube();
+  const container = ui.el('div', { class: 'solo' });
+  root.appendChild(container);
+  container.appendChild(ui.el('div', { class: 'empty__desc', text: '正在打开你的独享本…' }));
+
+  let albumId;
+  try {
+    albumId = await db.getOrCreateSoloAlbum();
+  } catch (e) {
+    ui.renderError(root, e, { actionText: '返回首页', onAction: () => { location.hash = '#/'; } });
+    return;
+  }
+  await loadAndRenderSolo(container, albumId);
+  addSoloFab(root, albumId);
+}
+
+async function loadAndRenderSolo(container, albumId) {
+  ui.clear(container);
+  let rows;
+  try {
+    rows = await db.listPhotos({ albumId });
+  } catch (e) {
+    ui.renderError(container, e);
+    return;
+  }
+
+  if (!rows.length) {
+    ui.renderEmptyState(container, {
+      title: '还没有照片',
+      desc: '点右下角的 + 开始添加，你的第一张照片会出现在这个转动的立方体上。',
+      actionText: '+ 添加照片',
+      onAction: () => openFilePicker(albumId, null),
+    });
+    return;
+  }
+
+  const photos = await Promise.all(rows.map(async (r) => ({
+    id: r.id, name: r.name, caption: r.caption,
+    thumbUrl: await storage.signedThumbUrl(r.thumb_path),
+    fullPath: r.storage_path, thumbPath: r.thumb_path,
+  })));
+
+  const cubeBox = ui.el('div', { class: 'cube' });
+  container.appendChild(cubeBox);
+  activeCube = initCube(cubeBox, photos, { onTap: (i, p) => openViewer(p, container, albumId) });
+
+  container.appendChild(ui.el('div', { class: 'tabs' }, [
+    ui.el('button', {
+      class: 'tab', type: 'button', text: '复制只读分享链接',
+      onclick: async () => {
+        try {
+          const link = await share.createSoloShare(albumId);
+          if (navigator.clipboard) navigator.clipboard.writeText(link).catch(() => {});
+          ui.showToast(`已复制分享链接：${link}`, 'ok');
+        } catch (e) { ui.showToast(e.message || '生成分享失败', 'error'); }
+      },
+    }),
+  ]));
+
+  addBackupBar(container, albumId);
+}
+
+/** 备份工具栏（导出 / 导入） */
+function addBackupBar(root, albumId) {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = '.zip'; fileInput.style.display = 'none';
+  fileInput.onchange = async () => {
+    if (!fileInput.files || !fileInput.files.length) return;
+    ui.showToast('正在导入备份…');
+    try {
+      const newId = await backup.importBackup(fileInput.files[0]);
+      ui.showToast('导入完成！', 'ok');
+      location.hash = albumId === newId ? `#/solo` : `#/solo`;
+    } catch (e) { ui.showToast(e.message || '导入失败', 'error'); }
+  };
+  root.appendChild(fileInput);
+  root.appendChild(ui.el('div', { class: 'tabs' }, [
+    ui.el('button', { class: 'tab', type: 'button', text: '导出备份', onclick: async () => {
+      try { await backup.exportBackup(albumId); ui.showToast('已导出备份 zip', 'ok'); }
+      catch (e) { ui.showToast(e.message || '导出失败', 'error'); }
+    } }),
+    ui.el('button', { class: 'tab', type: 'button', text: '导入备份', onclick: () => fileInput.click() }),
+  ]));
+}
+
+function addSoloFab(root, albumId) {
+  const fab = ui.el('button', {
+    class: 'fab', type: 'button', text: '+', title: '添加照片',
+    onclick: () => openFilePicker(albumId, null),
+  });
+  root.appendChild(fab);
+}
+
+function openFilePicker(albumId, memberId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = async () => {
+    if (!input.files || !input.files.length) return;
+    await uploadFiles(albumId, memberId, input.files);
+  };
+  input.click();
+}
+
+async function uploadFiles(albumId, memberId, files) {
+  const u = await auth.getUser();
+  if (!u) { ui.showToast('请先登录', 'error'); return; }
+  const ownerId = u.id;
+
+  ui.showToast('正在压缩与上传…');
+  const { results, skipped } = await image.handleFiles(files);
+
+  // R7：本次追加的 order_index 接在当前最大之后，间隔 ORDER_STEP
+  let maxOrder = 0;
+  try {
+    const cur = await db.listPhotos({ albumId, memberId });
+    maxOrder = cur.reduce((m, p) => Math.max(m, p.order_index || 0), 0);
+  } catch (_) { /* 忽略，回退 0 */ }
+
+  let ok = 0, fail = 0, order = maxOrder;
+  for (const r of results) {
+    order += ORDER_STEP;
+    const photoId = crypto.randomUUID();
+    let paths;
+    try {
+      paths = await storage.uploadPair(albumId, memberId, photoId, r.fullBlob, r.thumbBlob);
+    } catch (e) {
+      fail += 1; console.error('[upload] 上传失败', e); continue;
+    }
+    try {
+      await db.insertPhotoRow({
+        albumId, memberId, ownerId,
+        storagePath: paths.full, thumbPath: paths.thumb,
+        name: '', caption: '', width: r.width, height: r.height,
+        sizeBytes: r.sizeBytes, orderIndex: order,
+      });
+      ok += 1;
+    } catch (e) {
+      // R8 回滚：删掉已上传的两个文件
+      fail += 1;
+      console.error('[upload] 入库失败，回滚文件', e);
+      await storage.removePair(paths).catch(() => {});
+    }
+  }
+
+  const parts = [`已上传 ${ok} 张`];
+  if (skipped) parts.push(`${skipped} 张无法处理已跳过`);
+  if (fail) parts.push(`${fail} 张未完成，请重试`);
+  ui.showToast(parts.join('，'), fail ? 'error' : 'ok');
+
+  await loadAndRenderSolo(document.getElementById('app').querySelector('.solo') || ui.$('#app'), albumId);
+}
+
+async function openViewer(photo, container, albumId) {
+  let url;
+  try {
+    url = await storage.signedFullUrl(photo.fullPath);
+  } catch (e) {
+    ui.showToast('原图加载失败', 'error');
+    return;
+  }
+  const overlay = ui.el('div', { class: 'viewer' }, [
+    ui.el('div', { class: 'viewer__img' }, [ui.el('img', { src: url, alt: '' })]),
+    ui.el('div', { class: 'viewer__bar' }, [
+      ui.el('div', { class: 'viewer__cap', text: [photo.name, photo.caption].filter(Boolean).join(' · ') }),
+      ui.el('button', {
+        class: 'btn btn--danger', type: 'button', text: '删除',
+        onclick: async () => {
+          const yes = await ui.confirmDialog({
+            title: '删除这张照片', message: '删除后无法恢复，确定吗？', confirmText: '删除', danger: true,
+          });
+          if (!yes) return;
+          try { await db.deletePhotoRow(photo.id); } catch (e) { ui.showToast('删除失败', 'error'); return; }
+          await storage.removePair({ full: photo.fullPath, thumb: photo.thumbPath }).catch(() => {});
+          overlay.remove();
+          if (memberId) await renderMemberAlbum(container, albumId, memberId);
+          else await loadAndRenderSolo(container, albumId);
+        },
+      }),
+      ui.el('button', { class: 'btn', type: 'button', text: '关闭', onclick: () => overlay.remove() }),
+    ]),
+  ]);
+  document.body.appendChild(overlay);
+}
+
+// ===================== 页面：待接入占位 =====================
+
+function renderPending(root, name) {
+  return ui.renderEmptyState(root, {
+    title: name,
+    desc: '这一页还没接入，将在后续里程碑完成。',
+    actionText: '返回首页',
+    onAction: () => { location.hash = '#/'; },
+  });
+}
+
+// ===================== 页面：404 =====================
+
+function renderNotFound(root, hash) {
+  return ui.renderEmptyState(root, {
+    title: '页面不存在',
+    desc: `找不到这个地址：${hash || '#/'}`,
+    actionText: '返回首页',
+    onAction: () => { location.hash = '#/'; },
+  });
+}
+
+// ===================== 页面：家族树（里程碑 7）=====================
+
+let treeCtrl = null;
+let activeCube = null;
+
+function destroyActiveCube() {
+  if (activeCube) { try { activeCube.destroy(); } catch (_) {} activeCube = null; }
+}
+
+/** 取每个果实的头像：优先微信头像（members.avatar_url），否则用其第一张照片缩略图。 */
+async function loadAvatars(members) {
+  const map = {};
+  await Promise.all(members.map(async (m) => {
+    if (m.avatar_url) { map[m.id] = m.avatar_url; return; }
+    try {
+      const { data } = await supabaseClient
+        .from('photos').select('thumb_path').eq('member_id', m.id).order('order_index').limit(1);
+      if (data && data.length) map[m.id] = await storage.signedThumbUrl(data[0].thumb_path);
+    } catch (_) { /* 头像缺失就回退首字母 */ }
+  }));
+  return map;
+}
+
+function pageTitle(root, text) {
+  root.appendChild(ui.el('div', { class: 'brand__sub', text }));
+}
+
+async function renderTreesList(root) {
+  pageTitle(root, '我的家族树');
+  const wrap = ui.el('div', { class: 'list' });
+  const input = ui.el('input', { class: 'input', type: 'text', placeholder: '树名（默认「我们家」）', maxlength: '60' });
+  const createBtn = ui.el('button', {
+    class: 'btn btn--primary', type: 'button', text: '种一棵新树',
+    onclick: async () => {
+      try { const { albumId } = await db.createFamilyAlbum(input.value.trim(), displayName()); location.hash = `#/tree/${albumId}`; }
+      catch (e) { ui.showToast(e.message || '创建失败', 'error'); }
+    },
+  });
+  const form = ui.el('div', { class: 'field' }, [input, createBtn]);
+  root.appendChild(form); root.appendChild(wrap);
+  try {
+    const trees = await db.listMyTrees();
+    trees.forEach((t) => wrap.appendChild(ui.el('div', {
+      class: 'list__item list__item--btn', onclick: () => { location.hash = `#/tree/${t.id}`; },
+    }, [
+      ui.el('div', {}, [ui.el('div', { class: 'card__title', text: t.title })]),
+      ui.el('div', { class: 'userchip', text: '进入 →' }),
+    ])));
+    if (!trees.length) root.appendChild(ui.el('p', { class: 'empty__desc', text: '还没有树，先种一棵吧。' }));
+  } catch (e) { ui.renderError(root, e); }
+}
+
+async function renderTreePage(root, albumId) {
+  destroyActiveCube();
+  if (treeCtrl) { treeCtrl.destroy(); treeCtrl = null; }
+  pageTitle(root, '家族树');
+  let album;
+  try { album = await db.getAlbum(albumId); } catch (e) { ui.renderError(root, e); return; }
+  root.appendChild(ui.el('div', { class: 'brand__sub', text: album.title }));
+
+  let members;
+  try { members = await db.getTree(albumId); } catch (e) { ui.renderError(root, e); return; }
+  const avatars = await loadAvatars(members);
+
+  root.appendChild(ui.el('div', { class: 'tabs' }, [
+    ui.el('button', { class: 'tab tab--on', type: 'button', text: '+ 添加家人', onclick: () => showAddMember(root, albumId, members) }),
+    ui.el('button', { class: 'tab', type: 'button', text: '分享整树', onclick: async () => {
+      try {
+        const link = await share.createTreeShare(albumId);
+        if (navigator.clipboard) navigator.clipboard.writeText(link).catch(() => {});
+        ui.showToast(`已复制分享链接：${link}`, 'ok');
+      } catch (e) { ui.showToast(e.message || '生成分享失败', 'error'); }
+    } }),
+  ]));
+
+  const treeBox = ui.el('div', { class: 'tree' });
+  root.appendChild(treeBox);
+  treeCtrl = renderTree(treeBox, members, {
+    avatarOf: (id) => avatars[id] || null,
+    onMemberTap: (m) => {
+      if (m.user_id) location.hash = `#/tree/${albumId}/m/${m.id}`;
+      else copyInvite(albumId, m.id);
+    },
+  });
+  addBackupBar(root, albumId);
+}
+
+function showAddMember(root, albumId, members) {
+  const name = ui.el('input', { class: 'input', type: 'text', placeholder: '家人称呼，如「爸爸」', maxlength: '60' });
+  const rel = ui.el('input', { class: 'input', type: 'text', placeholder: '关系，如「父亲」', maxlength: '10' });
+  const parentSel = ui.el('select', { class: 'input' }, [
+    ui.el('option', { value: '', text: '（无父级，作为根）' }),
+    ...members.map((m) => ui.el('option', { value: m.id, text: m.display_name })),
+  ]);
+  root.appendChild(ui.el('div', { class: 'form' }, [
+    ui.el('div', { class: 'field' }, [ui.el('label', { text: '称呼' }), name]),
+    ui.el('div', { class: 'field' }, [ui.el('label', { text: '关系' }), rel]),
+    ui.el('div', { class: 'field' }, [ui.el('label', { text: '父辈（可选）' }), parentSel]),
+    ui.el('button', {
+      class: 'btn btn--primary', type: 'button', text: '添加',
+      onclick: async () => {
+        // 新果实是叶子节点，无后代，不可能成环，无需 cycle 检测
+        try {
+          await db.addMember({ albumId, displayName: name.value.trim(), relation: rel.value.trim(), parentMemberId: parentSel.value || null });
+          renderTreePage(root, albumId);
+        } catch (e) { ui.showToast(e.message || '添加失败', 'error'); }
+      },
+    }),
+  ]));
+}
+
+function copyInvite(albumId, memberId) {
+  const link = `${location.origin}${location.pathname}#/invite/${memberId}`;
+  if (navigator.clipboard) navigator.clipboard.writeText(link).catch(() => {});
+  ui.showToast(`已复制邀请链接（也可手动发给 TA）：${link}`, 'ok');
+}
+
+async function renderMemberAlbum(root, albumId, memberId) {
+  destroyActiveCube();
+  pageTitle(root, '家人的相册');
+  let members;
+  try { members = await db.getTree(albumId); } catch (e) { ui.renderError(root, e); return; }
+  const mem = members.find((m) => m.id === memberId);
+  if (!mem) { ui.renderError(root, new Error('果实不存在')); return; }
+
+  const u = await auth.getUser();
+  const isMine = u && mem.user_id === u.id;
+
+  let rows;
+  try { rows = await db.listPhotos({ albumId, memberId }); } catch (e) { ui.renderError(root, e); return; }
+  if (!rows.length && !isMine) {
+    ui.renderEmptyState(root, {
+      title: '这个果实还没有照片', desc: '等 TA 上传吧。',
+      actionText: '返回树', onAction: () => { location.hash = `#/tree/${albumId}`; },
+    });
+    return;
+  }
+
+  const photos = await Promise.all(rows.map(async (r) => ({
+    id: r.id, name: r.name, caption: r.caption,
+    thumbUrl: await storage.signedThumbUrl(r.thumb_path),
+    fullPath: r.storage_path, thumbPath: r.thumb_path,
+  })));
+
+  const cubeBox = ui.el('div', { class: 'cube' });
+  root.appendChild(cubeBox);
+  activeCube = initCube(cubeBox, photos, { onTap: (i, p) => openViewer(p, root, albumId, memberId) });
+  if (isMine) {
+    root.appendChild(ui.el('button', {
+      class: 'fab', type: 'button', text: '+', title: '添加照片',
+      onclick: () => openFilePicker(albumId, memberId),
+    }));
+  }
+}
+
+async function renderShare(root, token) {
+  pageTitle(root, '只读分享');
+  let data;
+  try { data = await share.fetchShare(token); }
+  catch (e) {
+    const msg = (e && e.code === 'LINK_INVALID') ? '分享链接无效或已撤销' : '加载分享失败';
+    ui.renderError(root, new Error(msg), { actionText: '返回首页', onAction: () => { location.hash = '#/'; } });
+    return;
+  }
+
+  const album = data.album || {};
+  if (album.kind === 'family') {
+    // 家族树：只读树视图
+    const members = data.members || [];
+    const avatars = {};
+    await Promise.all(members.filter((m) => m.joined).map(async (m) => {
+      try {
+        const first = (data.photos || []).find((p) => p.member_id === m.id);
+        if (first) avatars[m.id] = await storage.signedThumbUrl(first.thumb_path);
+      } catch (_) {}
+    }));
+    const treeBox = ui.el('div', { class: 'tree' });
+    root.appendChild(treeBox);
+    renderTree(treeBox, members, { avatarOf: (id) => avatars[id] || null });
+    root.appendChild(ui.el('p', { class: 'empty__desc', text: `${album.title} · 只读分享` }));
+  } else {
+    // 独享本 / 单果实：只读立方体
+    const photos = await Promise.all((data.photos || []).map(async (r) => ({
+      id: r.id, name: r.name, caption: r.caption,
+      thumbUrl: await storage.signedThumbUrl(r.thumb_path),
+      fullPath: r.storage_path, thumbPath: r.thumb_path,
+    })));
+    if (!photos.length) {
+      ui.renderEmptyState(root, { title: '这个分享还是空的', desc: '等主人上传照片吧。', actionText: '返回首页', onAction: () => { location.hash = '#/'; } });
+      return;
+    }
+    const cubeBox = ui.el('div', { class: 'cube' });
+    root.appendChild(cubeBox);
+    initCube(cubeBox, photos, {}); // 只读：无 onTap
+    root.appendChild(ui.el('p', { class: 'empty__desc', text: `${album.title} · 只读分享` }));
+  }
+}
+
+async function renderInvite(root, memberId) {
+  pageTitle(root, '接受邀请');
+  if (!state.session) {
+    ui.renderEmptyState(root, {
+      title: '还没连上', desc: '登录失败，请刷新页面后重试。',
+      actionText: '刷新', onAction: () => location.reload(),
+    });
+    return;
+  }
+  ui.renderEmptyState(root, {
+    title: '加入家族树', desc: '点下面按钮，把你的微信头像和名字绑到这个果实（仅限该果实尚未有人认领时）。',
+    actionText: '接受邀请并加入',
+    onAction: async () => {
+      try {
+        await db.acceptInvite(memberId);
+        if (state.profile && state.profile.avatar_url) {
+          await db.setMemberAvatar(memberId, state.profile.avatar_url).catch(() => {});
+        }
+        ui.showToast('已加入！', 'ok');
+        location.hash = '#/tree';
+      } catch (e) { ui.showToast(e.message || '加入失败', 'error'); }
+    },
+  });
+}
+
+// ===================== 路由表（7.2）=====================
+
+const ROUTES = [
+  { name: 'home', re: /^\/?$/, keys: [] },
+  { name: 'login', re: /^\/login$/, keys: [] },
+  { name: 'solo', re: /^\/solo$/, keys: [] },
+  { name: 'trees', re: /^\/tree$/, keys: [] },
+  { name: 'tree', re: /^\/tree\/([^/]+)$/, keys: ['albumId'] },
+  { name: 'member', re: /^\/tree\/([^/]+)\/m\/([^/]+)$/, keys: ['albumId', 'memberId'] },
+  { name: 'invite', re: /^\/invite\/([^/]+)$/, keys: ['token'] },
+  { name: 'share', re: /^\/s\/([^/]+)$/, keys: ['token'] },
+];
+
+const PAGE_NAMES = {
+  home: '首页', login: '登录 / 注册', solo: '我的独享本', trees: '我的家族树',
+  tree: '家族树', member: '家人的相册', invite: '接受邀请', share: '只读分享',
+};
+
+function parseHash() {
+  const path = (location.hash || '#/').replace(/^#/, '') || '/';
+  for (const r of ROUTES) {
+    const m = path.match(r.re);
+    if (!m) continue;
+    const params = {};
+    r.keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); });
+    return { name: r.name, params };
+  }
+  return { name: 'notFound', params: {}, path };
+}
+
+function render() {
+  const root = ui.$('#app');
+  ui.clear(root);
+  destroyActiveCube();
+  if (treeCtrl) { treeCtrl.destroy(); treeCtrl = null; }
+  renderChrome(root);
+  const route = parseHash();
+  try {
+    if (PROTECTED.has(route.name) && !requireAuth()) return;
+    switch (route.name) {
+      case 'home': renderHome(root); break;
+      case 'login': location.hash = '#/'; return;
+      case 'solo': renderSolo(root); break;
+      case 'trees': renderTreesList(root); break;
+      case 'tree': renderTreePage(root, route.params.albumId); break;
+      case 'member': renderMemberAlbum(root, route.params.albumId, route.params.memberId); break;
+      case 'invite': renderInvite(root, route.params.token); break;
+      case 'share': renderShare(root, route.params.token); break;
+      case 'notFound': renderNotFound(root, route.path); break;
+      default: renderPending(root, PAGE_NAMES[route.name] || route.name); break;
+    }
+  } catch (err) {
+    console.error('[route]', route.name, err);
+    ui.renderError(root, err, { actionText: '返回首页', onAction: () => { location.hash = '#/'; } });
+  }
+}
+
+// ===================== 启动 =====================
+
+function installGlobalErrorHandlers() {
+  window.addEventListener('error', (e) => ui.showErrorBar(e.message || '脚本运行出错'));
+  window.addEventListener('unhandledrejection', (e) => ui.showErrorBar((e.reason && e.reason.message) || e.reason || '异步任务出错'));
+}
+
+/** 给网络请求加超时：弱网/跨境访问 Supabase 慢时，不至于无限等待导致黑屏 */
+function withTimeout(p, ms, msg) {
+  return Promise.race([
+    p,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms)),
+  ]);
+}
+
+const NET_TIMEOUT_MS = 10000;
+
+async function boot() {
+  window.__ALBUM3D_BOOTED__ = true;       // 启动标志：兜底脚本据此判断
+  // 慢网下模块可能晚于兜底计时器才就绪：既已成功启动，就把兜底失败页收回去
+  const staleBootfail = document.getElementById('bootfail');
+  if (staleBootfail && !staleBootfail.hidden) staleBootfail.hidden = true;
+  installGlobalErrorHandlers();
+  const ver = ui.$('#ver');
+  if (ver) ver.textContent = VER;
+
+  // 先把界面画出来（未登录态也能画首页）：网络再慢也绝不黑屏
+  window.addEventListener('hashchange', render);
+  render();
+
+  // 7.7 降级：云端不可用（supabaseClient 为 null）时，给出明确提示而非白屏
+  if (!supabaseClient) {
+    ui.showErrorBar('云端尚未就绪：' + (supabaseError || 'Supabase 客户端初始化失败'));
+    return;
+  }
+
+  auth.onAuthChange(async () => { await refreshSession(); render(); });
+
+  try {
+    // 极简匿名：打开即登录（零步骤），首次填一下微信名/头像即可。
+    // 每步限时，超时给出明确提示（弱网/跨境网络时 Supabase 可能很慢）。
+    await withTimeout(auth.ensureSession(), NET_TIMEOUT_MS, '连接云端超时，请检查网络后刷新重试');
+    await withTimeout(refreshSession(), NET_TIMEOUT_MS, '读取账号信息超时，请检查网络后刷新重试');
+    if (!state.profile || !state.profile.display_name) {
+      await openProfileModal();
+      await withTimeout(refreshSession(), NET_TIMEOUT_MS, '保存后读取资料超时，请刷新页面');
+    }
+  } catch (e) {
+    ui.showErrorBar('登录失败：' + ui.errText(e));
+  }
+
+  render();
+}
+
+try {
+  boot();
+} catch (err) {
+  console.error('[boot]', err);
+  ui.renderLoadFailed(ui.errText(err));
+}
+</script>
+</body>
+</html>
