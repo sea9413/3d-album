@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="description" content="3D 旋转图册：独享本与家族树，一个站点两个入口。">
+<title>3D 旋转图册</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<style>
+/* ============ 设计变量 ============ */
+:root{
+  --bg:#0f1117;
+  --bg-2:#1b2030;
+  --card:rgba(255,255,255,.05);
+  --card-hi:rgba(255,255,255,.09);
+  --line:rgba(255,255,255,.10);
+  --text:#e8eaf0;
+  --muted:#98a1b2;
+  --accent:#ffb86b;
+  --accent-2:#7cc4ff;
+  --danger:#ff6b6b;
+  --radius:16px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{
+  margin:0;
+  min-height:100vh;
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  color:var(--text);
+  background:radial-gradient(120% 80% at 50% 0%,var(--bg-2) 0%,var(--bg) 62%);
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+  touch-action:manipulation;
+}
+button{font:inherit;color:inherit}
+img{display:block;max-width:100%}
+
+/* ============ 骨架 ============ */
+.app{
+  max-width:720px;
+  margin:0 auto;
+  padding:24px 16px calc(96px + var(--safe-b));
+  min-height:100vh;
+}
+.brand{padding:28px 4px 18px;text-align:center}
+.brand__title{margin:0;font-size:26px;letter-spacing:2px;font-weight:600}
+.brand__sub{margin:6px 0 0;font-size:13px;color:var(--muted)}
+
+/* 首页两张卡片 */
+.cards{display:grid;gap:14px;grid-template-columns:1fr;margin-top:8px}
+@media (min-width:600px){.cards{grid-template-columns:1fr 1fr}}
+.card{
+  display:flex;gap:14px;align-items:center;
+  min-height:104px;padding:18px;
+  text-align:left;cursor:pointer;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  transition:background .18s ease,transform .18s ease,border-color .18s ease;
+}
+.card:hover,.card:focus-visible{background:var(--card-hi);border-color:rgba(255,184,107,.45);transform:translateY(-2px)}
+.card__badge{
+  flex:0 0 56px;height:56px;border-radius:14px;
+  display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(255,184,107,.22),rgba(255,184,107,.06));
+  border:1px solid rgba(255,184,107,.28);
+}
+.card__badge--tree{background:linear-gradient(145deg,rgba(124,196,255,.22),rgba(124,196,255,.06));border-color:rgba(124,196,255,.28)}
+.card__title{display:block;margin:0;font-size:17px;font-weight:600}
+.card__desc{display:block;margin:4px 0 0;font-size:13px;color:var(--muted)}
+
+/* ============ 顶部栏（登录态）============ */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.topbar__left{font-weight:600;font-size:15px}
+.topbar__user{display:flex;align-items:center;gap:10px}
+.userchip{font-size:13px;color:var(--muted);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn--ghost{background:transparent;border:1px solid var(--line)}
+
+/* ============ 表单（登录 / 注册 / 找回）============ */
+.form{max-width:380px;margin:14px auto 0;display:grid;gap:12px}
+.input{height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font:inherit}
+.input:focus{outline:none;border-color:var(--accent)}
+.tabs{display:flex;gap:8px;justify-content:center;margin:6px 0 4px}
+.tab{padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;min-height:44px}
+.tab--on{background:var(--card-hi);border-color:rgba(255,184,107,.45);font-weight:600}
+.linklike{background:none;border:none;color:var(--accent-2);cursor:pointer;text-decoration:underline;font:inherit;padding:6px 4px;min-height:44px}
+
+/* ============ 顶部头像圆 ============ */
+.topbar__av{width:32px;height:32px;border-radius:50%;overflow:hidden;background:var(--card-hi);display:grid;place-items:center;font-weight:600;flex:none}
+.topbar__av img{width:100%;height:100%;object-fit:cover}
+.topbar__av span{font-size:15px;color:var(--muted)}
+
+/* ============ 资料卡头像预览 ============ */
+.avatar-prev{width:96px;height:96px;border-radius:50%;overflow:hidden;margin:4px auto 14px;background:var(--card-hi);display:grid;place-items:center}
+.avatar-prev img{width:100%;height:100%;object-fit:cover}
+.avatar-prev__init{font-size:38px;font-weight:600;color:var(--muted)}
+
+/* ============ 通用按钮 ============ */
+.btn{
+  min-height:44px;padding:0 18px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:12px;border:1px solid var(--line);
+  background:var(--card);cursor:pointer;
+  transition:background .15s ease,opacity .15s ease;
+}
+.btn:hover{background:var(--card-hi)}
+.btn--primary{background:linear-gradient(145deg,#ffc98a,var(--accent));color:#231703;border-color:transparent;font-weight:600}
+.btn--danger{background:var(--danger);color:#fff;border-color:transparent;font-weight:600}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* ============ 3D 家族树 ============ */
+.tree{position:relative;width:100%;height:min(72vh,620px);perspective:1100px;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;background:radial-gradient(120% 80% at 50% 30%,#1d2436 0%,#0f1117 70%)}
+.tree__scene{position:absolute;left:50%;top:42%;transform-style:preserve-3d;will-change:transform}
+.tree__fruit{position:absolute;left:0;top:0;width:84px;height:84px;margin:0;transform-style:preserve-3d;cursor:pointer}
+.tree__avatar{
+  width:84px;height:84px;border-radius:50%;overflow:hidden;
+  display:grid;place-items:center;font-size:30px;font-weight:600;color:#fff;
+  background:linear-gradient(145deg,#ffc98a,#ff9f6b);
+  border:2px solid rgba(255,255,255,.35);
+  box-shadow:0 8px 20px rgba(0,0,0,.45);
+}
+.tree__fruit--empty .tree__avatar{
+  background:rgba(255,255,255,.06);
+  border:2px dashed rgba(255,255,255,.4);
+  color:rgba(255,255,255,.5);font-size:26px;
+}
+.tree__avatar img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.tree__label{
+  position:absolute;top:88px;left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:12px;color:#e8eaf0;text-shadow:0 1px 3px rgba(0,0,0,.7);
+}
+.tree__glow{
+  position:absolute;inset:-6px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,200,138,.35),transparent 70%);
+  z-index:-1;
+}
+
+/* ============ 列表 / 通用卡片 ============ */
+.list{display:grid;gap:12px;margin-top:8px}
+.list__item{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--card);min-height:60px;
+}
+.list__item--btn{cursor:pointer}
+.list__item--btn:hover{background:var(--card-hi)}
+.field{display:grid;gap:6px;margin-bottom:12px}
+.field label{font-size:13px;color:var(--muted)}
+
+/* ============ 悬浮上传按钮 ============ */
+.fab{
+  position:fixed;right:18px;bottom:calc(56px + var(--safe-b));z-index:40;
+  width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
+  display:grid;place-items:center;font-size:26px;line-height:1;
+  background:linear-gradient(145deg,#ffc98a,var(--accent));color:#231703;
+  box-shadow:0 8px 22px rgba(0,0,0,.4);
+}
+.fab:active{transform:scale(.94)}
+
+/* ============ 全屏看图 ============ */
+.viewer{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.94);display:flex;flex-direction:column}
+.viewer__img{flex:1;display:grid;place-items:center;padding:16px;min-height:0}
+.viewer__img img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
+.viewer__bar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px calc(12px + var(--safe-b));color:#fff}
+.viewer__cap{font-size:14px;color:#e8eaf0;flex:1}
+
+/* ============ 3D 立方体 ============ */
+.cube{position:relative;width:100%;height:min(64vh,520px);perspective:1200px;touch-action:none;user-select:none;-webkit-user-select:none}
+.cube__stage{position:absolute;inset:0;transform-style:preserve-3d}
+.cube__face{
+  position:absolute;left:50%;top:50%;width:78%;height:78%;
+  margin-left:-39%;margin-top:-39%;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:14px;overflow:hidden;background:#232733;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);
+  will-change:transform;
+}
+.cube__face img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.cube__cap{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:10px 12px;font-size:13px;color:#fff;
+  background:linear-gradient(0deg,rgba(0,0,0,.6),transparent);
+}
+.cube__cap b{font-weight:600}
+.cube__counter{
+  position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);
+  font-size:13px;color:var(--muted);
+}
+
+/* ============ 空状态 / 错误 ============ */
+.empty{padding:48px 16px;text-align:center}
+.empty__icon{margin:0 auto 14px;width:64px;height:64px;display:grid;place-items:center;color:var(--accent)}
+.empty__title{margin:0 0 8px;font-size:18px;font-weight:600}
+.empty__desc{margin:0 auto 20px;max-width:22em;font-size:14px;color:var(--muted)}
+.empty--error .empty__title{color:var(--danger)}
+
+/* ============ 版本号 ============ */
+.ver{
+  position:fixed;left:0;right:0;bottom:0;
+  padding:10px 0 calc(10px + var(--safe-b));
+  text-align:center;font-size:12px;color:var(--muted);
+  background:linear-gradient(180deg,transparent,rgba(15,17,23,.85));
+  pointer-events:none;
+}
+
+/* ============ toast ============ */
+.toast{
+  position:fixed;left:50%;bottom:calc(56px + var(--safe-b));transform:translateX(-50%);
+  max-width:min(88vw,420px);
+  padding:10px 16px;border-radius:12px;
+  background:rgba(28,32,44,.96);border:1px solid var(--line);
+  font-size:14px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.toast--error{border-color:rgba(255,107,107,.6);color:#ffd9d9}
+.toast--ok{border-color:rgba(124,196,255,.5)}
+
+/* ============ 全局错误红条 ============ */
+.errbar{
+  position:fixed;left:0;right:0;bottom:calc(34px + var(--safe-b));
+  padding:10px 14px;z-index:70;cursor:pointer;
+  background:rgba(120,26,32,.95);color:#ffe3e3;font-size:13px;
+  border-top:1px solid rgba(255,107,107,.6);
+  word-break:break-all;
+}
+
+/* ============ 弹窗 ============ */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center}
+.modal__mask{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.modal__box{
+  position:relative;width:min(90vw,380px);
+  padding:22px;border-radius:var(--radius);
+  background:#171b26;border:1px solid var(--line);
+  box-shadow:0 18px 48px rgba(0,0,0,.5);
+}
+.modal__title{margin:0 0 10px;font-size:17px;font-weight:600}
+.modal__msg{margin:0 0 20px;font-size:14px;color:var(--muted);white-space:pre-wrap}
+.modal__actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* ============ 兜底：加载失败 ============ */
+.bootfail{
+  position:fixed;inset:0;z-index:100;display:grid;place-items:center;
+  padding:24px;background:var(--bg);
+}
+.bootfail__card{
+  max-width:420px;text-align:center;
+  padding:28px;border-radius:var(--radius);
+  background:#171b26;border:1px solid var(--line);
+}
+.bootfail__title{margin:0 0 10px;font-size:18px}
+.bootfail__desc{margin:0 0 20px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<main id="app" class="app"></main>
+<footer id="ver" class="ver"></footer>
+<div id="toast" class="toast" hidden></div>
+<div id="errbar" class="errbar" hidden role="alert"></div>
+<div id="modal" class="modal" hidden></div>
+<div id="bootfail" class="bootfail" hidden></div>
+
+<!--
+  兜底脚本（7.7 第 2 条）：3 秒后仍未见到启动标志，就显示「加载失败，请刷新重试」。
+  · 只 import config.js（零依赖纯常量），因此 js/ 下别的模块 404 / 语法错误时它照样能跑；
+  · 自身不依赖 ui.js，保证「ui.js 坏了也要能看到提示」。
+-->
+<!-- vendor：UMD，先于 ES Module 加载，注入全局 supabase.createClient / JSZip -->
+<script src="./vendor/supabase-js.min.js?v=20260924b"></script>
+<script src="./vendor/jszip.min.js?v=20260924b"></script>
+<script type="module">
+  import { BOOT_TIMEOUT_MS } from './js/config.js';
+  setTimeout(function () {
+    if (window.__ALBUM3D_BOOTED__) return;
+    var box = document.getElementById('bootfail');
+    box.textContent = '';
+    var card = document.createElement('div');
+    card.className = 'bootfail__card';
+    var h = document.createElement('h2');
+    h.className = 'bootfail__title';
+    h.textContent = '加载失败，请刷新重试';
+    var p = document.createElement('p');
+    p.className = 'bootfail__desc';
+    p.textContent = '页面脚本未能启动。请检查网络后刷新；若反复出现，请清一下浏览器缓存。';
+    var b = document.createElement('button');
+    b.className = 'btn btn--primary';
+    b.type = 'button';
+    b.textContent = '刷新';
+    b.addEventListener('click', function () { location.reload(); });
+    card.appendChild(h); card.appendChild(p); card.appendChild(b);
+    box.appendChild(card);
+    box.hidden = false;
+  }, BOOT_TIMEOUT_MS);
+</script>
+
+<script type="module" src="./js/app.20260924c.js"></script>
+</body>
+</html>
