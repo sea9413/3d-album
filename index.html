@@ -269,8 +269,8 @@ img{display:block;max-width:100%}
   · 自身不依赖 ui.js，保证「ui.js 坏了也要能看到提示」。
 -->
 <!-- vendor：UMD，先于 ES Module 加载，注入全局 supabase.createClient / JSZip -->
-<script src="./vendor/supabase-js.min.js"></script>
-<script src="./vendor/jszip.min.js"></script>
+<script src="./vendor/supabase-js.min.js?v=20260924b"></script>
+<script src="./vendor/jszip.min.js?v=20260924b"></script>
 <script type="module">
   import { BOOT_TIMEOUT_MS } from './js/config.js';
   setTimeout(function () {
@@ -296,6 +296,6 @@ img{display:block;max-width:100%}
   }, BOOT_TIMEOUT_MS);
 </script>
 
-<script type="module" src="./js/app.js"></script>
+<script type="module" src="./js/app.js?v=20260924b"></script>
 </body>
 </html>
