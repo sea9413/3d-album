@@ -1,0 +1,10 @@
+# 密钥：绝不入库
+pat.txt
+
+# 本地项目数据（非代码）
+.codebuddy/
+
+# 杂项
+node_modules/
+.DS_Store
+Thumbs.db
