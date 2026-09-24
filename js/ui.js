@@ -39,7 +39,7 @@ export function clear(node) {
 
 /** HTML 转义（仅用于确需拼字符串的场景） */
 export function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
 }
@@ -62,7 +62,7 @@ export function showToast(msg, type = 'info') {
   if (!box) return;
   clear(box);
   box.className = `toast toast--${type}`;
-  box.textContent = String(msg ?? '');
+  box.textContent = String(msg == null ? '' : msg);
   box.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { box.hidden = true; }, TOAST_DURATION_MS);
