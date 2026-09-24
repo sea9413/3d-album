@@ -6,8 +6,8 @@
  *       边缘函数内部只调 SECURITY DEFINER 的 share_get，全程不碰 service_role 密钥。
  */
 
-import { sb, supabaseClient } from './supabase.js';
-import { auth } from './auth.js';
+import { sb } from './supabase.js';
+import { getUser } from './auth.js';
 import { SITE_BASE_URL, SHARE_PATH_PREFIX } from './config.js';
 
 /** 32 字节随机十六进制 token（铁律 3）。 */
@@ -24,7 +24,7 @@ function shareUrl(token) {
 /** 生成独享本只读分享链接（member_id = null → 整本）。 */
 export async function createSoloShare(albumId) {
   const token = randomToken();
-  const me = await auth.getUser();
+  const me = await getUser();
   const { data, error } = await sb.from('share_links').insert({
     album_id: albumId, token, created_by: me.id, member_id: null,
   }).select('token').single();
@@ -35,7 +35,7 @@ export async function createSoloShare(albumId) {
 /** 生成家族树只读分享链接。memberId 为空 = 整棵树，否则只分享某个果实。 */
 export async function createTreeShare(albumId, memberId = null) {
   const token = randomToken();
-  const me = await auth.getUser();
+  const me = await getUser();
   const { data, error } = await sb.from('share_links').insert({
     album_id: albumId, token, created_by: me.id, member_id: memberId,
   }).select('token').single();
@@ -48,7 +48,7 @@ export async function createTreeShare(albumId, memberId = null) {
  * @returns {Promise<{album:object, members:Array, photos:Array}>}
  */
 export async function fetchShare(token) {
-  const { data, error } = await supabaseClient.functions.invoke('share-open', {
+  const { data, error } = await sb.functions.invoke('share-open', {
     method: 'POST',
     body: { token },
   });
