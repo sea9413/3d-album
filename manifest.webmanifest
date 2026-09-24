@@ -1,0 +1,12 @@
+{
+  "name": "3D 旋转图册",
+  "short_name": "3D图册",
+  "description": "独享本与家族树，一个站点两个入口。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "lang": "zh-CN"
+}
