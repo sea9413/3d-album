@@ -77,6 +77,6 @@ export const SHARE_PATH_PREFIX = '#/s/';
 /** 邀请页路由前缀（7.2 路由表） */
 export const INVITE_PATH_PREFIX = '#/invite/';
 /** 启动兜底检测时限（ms）：7.7「3 秒后检测初始化标志」 */
-export const BOOT_TIMEOUT_MS = 3000;
+export const BOOT_TIMEOUT_MS = 12000;
 /** toast 停留时长（ms），UI 表现参数 */
 export const TOAST_DURATION_MS = 2400;
