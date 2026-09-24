@@ -760,6 +760,16 @@ function installGlobalErrorHandlers() {
   window.addEventListener('unhandledrejection', (e) => ui.showErrorBar((e.reason && e.reason.message) || e.reason || '异步任务出错'));
 }
 
+/** 给网络请求加超时：弱网/跨境访问 Supabase 慢时，不至于无限等待导致黑屏 */
+function withTimeout(p, ms, msg) {
+  return Promise.race([
+    p,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms)),
+  ]);
+}
+
+const NET_TIMEOUT_MS = 10000;
+
 async function boot() {
   window.__ALBUM3D_BOOTED__ = true;       // 启动标志：兜底脚本据此判断
   // 慢网下模块可能晚于兜底计时器才就绪：既已成功启动，就把兜底失败页收回去
@@ -769,26 +779,31 @@ async function boot() {
   const ver = ui.$('#ver');
   if (ver) ver.textContent = VER;
 
+  // 先把界面画出来（未登录态也能画首页）：网络再慢也绝不黑屏
+  window.addEventListener('hashchange', render);
+  render();
+
   // 7.7 降级：云端不可用（supabaseClient 为 null）时，给出明确提示而非白屏
   if (!supabaseClient) {
     ui.showErrorBar('云端尚未就绪：' + (supabaseError || 'Supabase 客户端初始化失败'));
-  } else {
-    try {
-      // 极简匿名：打开即登录（零步骤），首次填一下微信名/头像即可
-      await auth.ensureSession();
-      await refreshSession();
-      if (!state.profile || !state.profile.display_name) {
-        await openProfileModal();
-        await refreshSession();
-      }
-    } catch (e) {
-      ui.showErrorBar('登录失败：' + ui.errText(e));
-    }
+    return;
   }
 
   auth.onAuthChange(async () => { await refreshSession(); render(); });
 
-  window.addEventListener('hashchange', render);
+  try {
+    // 极简匿名：打开即登录（零步骤），首次填一下微信名/头像即可。
+    // 每步限时，超时给出明确提示（弱网/跨境网络时 Supabase 可能很慢）。
+    await withTimeout(auth.ensureSession(), NET_TIMEOUT_MS, '连接云端超时，请检查网络后刷新重试');
+    await withTimeout(refreshSession(), NET_TIMEOUT_MS, '读取账号信息超时，请检查网络后刷新重试');
+    if (!state.profile || !state.profile.display_name) {
+      await openProfileModal();
+      await withTimeout(refreshSession(), NET_TIMEOUT_MS, '保存后读取资料超时，请刷新页面');
+    }
+  } catch (e) {
+    ui.showErrorBar('登录失败：' + ui.errText(e));
+  }
+
   render();
 }
 
