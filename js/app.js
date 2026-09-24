@@ -762,6 +762,9 @@ function installGlobalErrorHandlers() {
 
 async function boot() {
   window.__ALBUM3D_BOOTED__ = true;       // 启动标志：兜底脚本据此判断
+  // 慢网下模块可能晚于兜底计时器才就绪：既已成功启动，就把兜底失败页收回去
+  const staleBootfail = document.getElementById('bootfail');
+  if (staleBootfail && !staleBootfail.hidden) staleBootfail.hidden = true;
   installGlobalErrorHandlers();
   const ver = ui.$('#ver');
   if (ver) ver.textContent = VER;
